@@ -306,6 +306,10 @@ class GeneralTab extends Component {
         h(PreferencesItem, {
           id: 'view.winrategraph_invert',
           text: t('Invert winrate graph')
+        }),
+        h(PreferencesItem, {
+          id: 'board.heatmap_show_intensity',
+          text: t('Show different heatmap color intensities')
         })
       )
     )

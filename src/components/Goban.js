@@ -8,9 +8,9 @@ import i18n from '../i18n.js'
 import * as gametree from '../modules/gametree.js'
 import * as gobantransformer from '../modules/gobantransformer.js'
 import * as helper from '../modules/helper.js'
+import setting from '../setting.js'
 
 const t = i18n.context('Goban')
-const setting = remote.require('./setting')
 const alpha = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'
 
 export default class Goban extends Component {
@@ -44,6 +44,13 @@ export default class Goban extends Component {
         oldHandler(evt, originalVertex)
       }
     }
+
+    // 添加设置变化监听器，确保热图强度设置变化时组件重新渲染
+    this.handleSettingChange = evt => {
+      if (evt.key === 'board.heatmap_show_intensity') {
+        this.forceUpdate()
+      }
+    }
   }
 
   componentDidMount() {
@@ -60,6 +67,14 @@ export default class Goban extends Component {
     window.addEventListener('resize', () => {
       this.resize()
     })
+
+    // 监听设置变化事件，使用与PreferencesDrawer.js相同的窗口ID格式
+    const remote = require('@electron/remote')
+    setting.events.on(
+      remote.getCurrentWindow().id,
+      'change',
+      this.handleSettingChange
+    )
 
     this.resize()
     this.componentWillReceiveProps()
@@ -80,6 +95,20 @@ export default class Goban extends Component {
         this.setState({left, top})
       }
     }, 0)
+  }
+
+  componentWillUnmount() {
+    // 移除设置变化监听器，避免内存泄漏
+    try {
+      const remote = require('@electron/remote')
+      setting.events.off(
+        remote.getCurrentWindow().id,
+        'change',
+        this.handleSettingChange
+      )
+    } catch (e) {
+      // 忽略可能的错误，确保组件能够正常卸载
+    }
   }
 
   componentWillReceiveProps(nextProps = {}) {
@@ -421,7 +450,13 @@ export default class Goban extends Component {
         winrate,
         scoreLead
       } of analysis.variations) {
-        let strength = Math.round((visits * winrate * 8) / maxVisitsWin) + 1
+        // Calculate strength based on show_intensity setting
+        // Always use actual strength when enabled, and null when disabled
+        // Using null instead of 0 to ensure proper handling of color display
+        let showIntensity = setting.get('board.heatmap_show_intensity')
+        let strength = showIntensity
+          ? Math.round((visits * winrate * 8) / maxVisitsWin) + 1
+          : null
 
         winrate =
           strength <= 3 ? Math.floor(winrate) : Math.floor(winrate * 10) / 10

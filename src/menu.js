@@ -106,12 +106,6 @@ exports.get = function(props = {}) {
         },
         {type: 'separator'},
         {
-          label: i18n.t('menu.file', '&Preferences…'),
-          accelerator: 'CmdOrCtrl+,',
-          click: () => sabaki.openDrawer('preferences')
-        },
-        {type: 'separator'},
-        {
           label: i18n.t('menu.file', '&Quit'),
           accelerator: 'CmdOrCtrl+Q',
           click: () => app.quit()
@@ -289,6 +283,12 @@ exports.get = function(props = {}) {
         {
           label: i18n.t('menu.edit', 'Remove &Other Variations'),
           click: () => sabaki.removeOtherVariations(sabaki.state.treePosition)
+        },
+        {type: 'separator'},
+        {
+          label: i18n.t('menu.edit', '&Preferences…'),
+          accelerator: 'CmdOrCtrl+,',
+          click: () => sabaki.openDrawer('preferences')
         }
       ]
     },

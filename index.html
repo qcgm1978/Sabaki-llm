@@ -11,6 +11,14 @@
     <link rel="stylesheet" type="text/css" href="./style/comments.css" />
   </head>
   <body>
+    <!-- Polyfill for Object.hasOwn -->
+    <script>
+      if (!Object.hasOwn) {
+        Object.hasOwn = function(obj, prop) {
+          return Object.prototype.hasOwnProperty.call(obj, prop)
+        }
+      }
+    </script>
     <script src="./bundle.js"></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 const path = require('path')
 
 module.exports = (env, argv) => ({
-  entry: './src/components/App.js',
+  entry: ['./src/polyfills.js', './src/components/App.js'],
 
   output: {
     filename: 'bundle.js',

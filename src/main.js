@@ -32,7 +32,15 @@ function newWindow(path) {
       nodeIntegration: true,
       contextIsolation: false,
       enableRemoteModule: true,
-      zoomFactor: setting.get('app.zoom_factor')
+      zoomFactor: setting.get('app.zoom_factor'),
+      // Enable web security but allow local file access for WebAssembly
+      webSecurity: false,
+      // Enable experimental features
+      experimentalFeatures: true,
+      // Enable native window open
+      nativeWindowOpen: true,
+      // Allow running insecure content (for development)
+      allowRunningInsecureContent: true
     }
   })
 
@@ -41,6 +49,8 @@ function newWindow(path) {
 
   window.once('ready-to-show', () => {
     window.show()
+    // Enable developer tools for debugging
+    window.webContents.openDevTools()
   })
 
   if (setting.get('window.maximized') === true) {
@@ -233,13 +243,29 @@ async function main() {
     process.exit(1)
   })
 
+  const fs = require('fs')
+
   await app.whenReady()
 
   if (!openfile && process.argv.length >= 2) {
     if (!['electron.exe', 'electron'].some(x => process.argv[0].endsWith(x))) {
-      openfile = process.argv[1]
+      const candidatePath = process.argv[2]
+      // 检查文件是否存在，只有存在时才设置openfile
+      if (
+        fs.existsSync(candidatePath) &&
+        fs.lstatSync(candidatePath).isFile()
+      ) {
+        openfile = candidatePath
+      }
     } else if (process.argv.length >= 3) {
-      openfile = process.argv[2]
+      const candidatePath = process.argv[2]
+      // 检查文件是否存在，只有存在时才设置openfile
+      if (
+        fs.existsSync(candidatePath) &&
+        fs.lstatSync(candidatePath).isFile()
+      ) {
+        openfile = candidatePath
+      }
     }
   }
 

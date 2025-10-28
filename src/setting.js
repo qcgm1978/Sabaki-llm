@@ -1,7 +1,38 @@
 const EventEmitter = require('events')
 const fs = require('fs')
 const path = require('path')
-const {app, BrowserWindow} = require('electron')
+
+// 在渲染进程中安全地处理用户数据目录
+// 首先设置一个安全的默认值
+let app = {
+  getPath: () =>
+    process.env.APPDATA ||
+    (process.platform === 'darwin'
+      ? process.env.HOME + '/Library/Application Support'
+      : process.env.HOME + '/.local/share') + '/Sabaki',
+  name: 'Sabaki'
+}
+
+// 同样为BrowserWindow设置安全的默认值
+let BrowserWindow = {
+  getAllWindows: () => []
+}
+
+try {
+  // 尝试导入真正的electron模块
+  const electron = require('electron')
+  if (electron.app) {
+    app = electron.app
+  }
+  if (electron.BrowserWindow) {
+    BrowserWindow = electron.BrowserWindow
+  }
+} catch (e) {
+  // 如果导入失败，保留默认对象
+  console.log(
+    'Using fallback app and BrowserWindow objects in renderer process'
+  )
+}
 
 const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
 
@@ -50,6 +81,7 @@ let defaults = {
   'board.show_analysis': true,
   'board.variation_replay_mode': 'move_by_move',
   'board.variation_replay_interval': 500,
+  'board.heatmap_show_intensity': true,
   'cleanmarkup.annotations': false,
   'cleanmarkup.arrow': true,
   'cleanmarkup.circle': true,
