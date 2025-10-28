@@ -60,10 +60,13 @@ class App extends Component {
     })
 
     ipcRenderer.on('load-file', (evt, ...args) => {
-      setTimeout(
-        () => sabaki.loadFile(...args),
-        setting.get('app.loadgame_delay')
-      )
+      setTimeout(async () => {
+        await sabaki.loadFile(...args)
+        // 确保文件加载后直接跳转到最后一手
+        if (setting.get('game.goto_end_after_loading')) {
+          sabaki.goToEnd()
+        }
+      }, setting.get('app.loadgame_delay'))
     })
 
     sabaki.window.on('focus', () => {

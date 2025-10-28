@@ -161,7 +161,7 @@ let defaults = {
   'game.default_board_size': 19,
   'game.default_komi': 6.5,
   'game.default_handicap': 0,
-  'game.goto_end_after_loading': false,
+  'game.goto_end_after_loading': true,
   'game.navigation_analysis_delay': 500,
   'game.navigation_sensitivity': 40,
   'game.show_ko_warning': true,
