@@ -12,16 +12,27 @@ module.exports = (env, argv) => ({
   target: 'electron-renderer',
 
   node: {
-    __dirname: false
+    __dirname: false,
+    __filename: false
   },
 
   resolve: {
     alias: {
       react: 'preact/compat',
-      'react-dom/test-utils': 'preact/test-utils',
       'react-dom': 'preact/compat',
+      'react-dom/test-utils': 'preact/test-utils',
       'react/jsx-runtime': 'preact/jsx-runtime'
-    }
+    },
+    extensions: ['.js', '.jsx', '.css']
+  },
+
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
+      }
+    ]
   },
 
   externals: {

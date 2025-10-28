@@ -7,6 +7,24 @@
   background: var(--drawer-bg-color);
 }
 
+/* 确保gtp-console样式的AI聊天抽屉正确显示并支持文字换行 */
+.ai-chat-drawer.gtp-console {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 400px;
+  background-color: #111;
+  color: #d0d0d0;
+  box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+  z-index: 10;
+  display: grid;
+  grid-template-rows: 40px 1fr auto;
+  word-wrap: break-word;
+  white-space: normal;
+  padding: 0; /* 重置默认padding */
+}
+
 .ai-chat-drawer .drawer-header {
   display: flex;
   justify-content: space-between;
@@ -14,6 +32,17 @@
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border-color);
+}
+
+/* 为gtp-console样式的抽屉定制头部 */
+.ai-chat-drawer.gtp-console .drawer-header {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  background-color: #111;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .ai-chat-drawer h2 {
@@ -47,6 +76,20 @@
   background: var(--input-bg-color);
   border-radius: 6px;
   margin-bottom: 15px;
+}
+
+/* 为gtp-console样式的抽屉定制消息区域 */
+.ai-chat-drawer.gtp-console .chat-messages {
+  padding: 0.3rem 10px;
+  margin: 0;
+  font-family: 'Consolas, Menlo, Monaco, "Ubuntu Mono", monospace';
+  font-size: 14px;
+  line-height: 1.3;
+  user-select: text;
+  cursor: auto;
+  background: none;
+  border-radius: 0;
+  margin-bottom: 0;
 }
 
 .ai-chat-drawer .chat-placeholder {
@@ -92,6 +135,19 @@
   word-wrap: break-word;
 }
 
+/* 确保所有消息内容都能自动换行 */
+.ai-chat-drawer.gtp-console .message-content {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  padding: 0;
+  border-radius: 0;
+  font-family: 'Consolas, Menlo, Monaco, "Ubuntu Mono", monospace';
+  font-size: 14px;
+  line-height: 1.3;
+}
+
 .ai-chat-drawer .message-user .message-content {
   background: var(--accent-color-light);
   color: var(--text-color);
@@ -122,6 +178,14 @@
   gap: 10px;
 }
 
+/* 为gtp-console样式的抽屉定制输入区域 */
+.ai-chat-drawer.gtp-console .chat-input-container {
+  background: #181818;
+  border-top: 1px solid #333;
+  padding: 5px;
+  gap: 5px;
+}
+
 .ai-chat-drawer textarea {
   width: 100%;
   padding: 10px;
@@ -134,6 +198,18 @@
   resize: vertical;
   min-height: 60px;
   box-sizing: border-box;
+}
+
+/* 为gtp-console样式的抽屉定制textarea */
+.ai-chat-drawer.gtp-console textarea {
+  background-color: transparent;
+  color: #d0d0d0;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-family: 'Consolas, Menlo, Monaco, "Ubuntu Mono", monospace';
+  font-size: 14px;
+  resize: none; /* 禁用调整大小 */
+  min-height: 40px;
 }
 
 .ai-chat-drawer textarea:focus {
@@ -159,8 +235,23 @@
   transition: background-color 0.2s;
 }
 
+/* 为gtp-console样式的抽屉定制发送按钮 */
+.ai-chat-drawer.gtp-console .send-button {
+  align-self: center;
+  padding: 6px 15px;
+  background: #333;
+  color: #d0d0d0;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
 .ai-chat-drawer .send-button:hover:not(:disabled) {
   background: var(--accent-color-dark);
+}
+
+/* 为gtp-console样式的抽屉定制发送按钮悬停效果 */
+.ai-chat-drawer.gtp-console .send-button:hover:not(:disabled) {
+  background: #444;
 }
 
 .ai-chat-drawer .send-button:disabled {

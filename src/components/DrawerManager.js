@@ -1,4 +1,4 @@
-import {h, Component} from 'preact'
+import {createElement as h, Component} from 'preact/compat'
 import sabaki from '../modules/sabaki.js'
 import {getRootProperty} from '../modules/gametree.js'
 

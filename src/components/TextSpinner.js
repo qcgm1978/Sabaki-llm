@@ -1,5 +1,5 @@
+import {createElement as h, Component} from 'preact/compat'
 import EventEmitter from 'events'
-import {h, Component} from 'preact'
 
 let pulse
 

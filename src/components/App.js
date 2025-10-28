@@ -1,6 +1,6 @@
 import {ipcRenderer} from 'electron'
 import * as remote from '@electron/remote'
-import {h, render, Component} from 'preact'
+import {createElement as h, render, Component} from 'preact/compat'
 import classNames from 'classnames'
 import fixPath from 'fix-path'
 

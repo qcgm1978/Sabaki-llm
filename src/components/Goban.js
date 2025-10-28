@@ -86,6 +86,7 @@ export default class Goban extends Component {
     let {maxWidth, maxHeight} = this.state
 
     setTimeout(() => {
+      if (!this.element) return
       let {width, height} = this.element.getBoundingClientRect()
 
       let left = Math.round((maxWidth - width) / 2)
