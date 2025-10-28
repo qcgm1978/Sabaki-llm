@@ -9,3 +9,12 @@ bundle.js.map
 
 *.pdn
 *.vbs
+
+# 忽略未跟踪的模块文件
+src/modules/aiManager.js
+src/modules/fileManager.js
+src/modules/historyManager.js
+src/modules/menuManager.js
+src/modules/navigationManager.js
+src/modules/ui.js
+src/modules/viewManager.js
