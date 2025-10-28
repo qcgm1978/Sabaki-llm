@@ -196,6 +196,18 @@ class App extends Component {
     })
 
     sabaki.newFile()
+
+    // 应用启动时自动连接引擎
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        if (setting.get('engines.auto_connect')) {
+          let engines = setting.get('engines.list')
+          if (engines && engines.length > 0) {
+            sabaki.attachEngines(engines)
+          }
+        }
+      }, 1000) // 延迟1秒以确保应用完全加载
+    })
   }
 
   componentDidUpdate(_, prevState = {}) {

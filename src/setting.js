@@ -149,6 +149,7 @@ let defaults = {
   'edit.show_removenode_warning': true,
   'edit.show_removeothervariations_warning': true,
   'engines.list': [],
+  'engines.auto_connect': false,
   'engines.analyze_commands': ['analyze', 'kata-analyze', 'lz-analyze'],
   'engines.gemove_analyze_commands': [
     'genmove_analyze',

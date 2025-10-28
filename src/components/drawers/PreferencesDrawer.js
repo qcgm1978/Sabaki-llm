@@ -750,6 +750,11 @@ class EnginesTab extends Component {
           h(PathInputItem, {
             id: 'gtp.console_log_path',
             chooseDirectory: true
+          }),
+
+          h(PreferencesItem, {
+            id: 'engines.auto_connect',
+            text: t('Automatically connect engines on startup')
           })
         )
       ),
