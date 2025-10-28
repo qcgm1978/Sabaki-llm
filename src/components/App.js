@@ -200,7 +200,7 @@ class App extends Component {
 
     sabaki.newFile()
 
-    // 应用启动时自动连接引擎
+    // 应用启动时自动连接引擎并打开AI对话框
     window.addEventListener('load', () => {
       setTimeout(() => {
         if (setting.get('engines.auto_connect')) {
@@ -209,6 +209,9 @@ class App extends Component {
             sabaki.attachEngines(engines)
           }
         }
+
+        // 自动打开AI对话框
+        sabaki.openDrawer('ai-chat')
       }, 1000) // 延迟1秒以确保应用完全加载
     })
   }

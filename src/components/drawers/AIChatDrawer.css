@@ -80,7 +80,7 @@
 
 /* 为gtp-console样式的抽屉定制消息区域 */
 .ai-chat-drawer.gtp-console .chat-messages {
-  padding: 0.3rem 10px;
+  padding: 0.3rem 10px .3rem 2rem;
   margin: 0;
   font-family: 'Consolas, Menlo, Monaco, "Ubuntu Mono", monospace';
   font-size: 14px;

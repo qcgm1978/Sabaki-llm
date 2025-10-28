@@ -62,6 +62,7 @@ let settings = {}
 let themesDict = null
 
 let defaults = {
+  'ai.deepseek_key': '',
   'app.always_show_result': false,
   'app.enable_hardware_acceleration': true,
   'app.hide_busy_delay': 200,

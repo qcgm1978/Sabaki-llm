@@ -27,26 +27,37 @@ export default class AIChatDrawer extends Component {
 
     const newMessages = [
       ...this.state.messages,
-      {role: 'user', content: message}
+      {role: 'user', content: message},
+      {role: 'waiting', id: Date.now()}
     ]
     this.setState({sending: true, messages: newMessages, input: ''})
 
     try {
       let response = await sabaki.sendDeepSeekMessage(message)
+      // 移除等待消息并添加响应
+      const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
       if (response.error) {
         this.setState({
-          messages: [...newMessages, {role: 'error', content: response.error}],
+          messages: [
+            ...updatedMessages,
+            {role: 'error', content: response.error}
+          ],
           sending: false
         })
       } else {
         this.setState({
-          messages: [...newMessages, {role: 'ai', content: response.content}],
+          messages: [
+            ...updatedMessages,
+            {role: 'ai', content: response.content}
+          ],
           sending: false
         })
       }
     } catch (err) {
+      // 移除等待消息并添加错误
+      const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
       this.setState({
-        messages: [...newMessages, {role: 'error', content: err.message}],
+        messages: [...updatedMessages, {role: 'error', content: err.message}],
         sending: false
       })
     }
@@ -74,6 +85,19 @@ export default class AIChatDrawer extends Component {
   }
 
   renderMessage(message) {
+    // 处理等待消息的特殊情况
+    if (message.role === 'waiting') {
+      return h(
+        'li',
+        {class: 'command sending'},
+        h(
+          'pre',
+          {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
+          h('span', {class: 'engine'}, 'AI>  ', h(TextSpinner, {}))
+        )
+      )
+    }
+
     let roleClass = 'internal'
     let roleLabel = '>'
 
