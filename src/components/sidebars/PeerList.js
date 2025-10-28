@@ -155,6 +155,13 @@ export class EnginePeerList extends Component {
     this.handleStartStopGameButtonClick = evt => {
       sabaki.startStopEngineGame(sabaki.state.treePosition)
     }
+
+    this.handleAIActionButtonClick = evt => {
+      sabaki.openAIActionMenu({
+        x: evt.clientX,
+        y: evt.clientY
+      })
+    }
   }
 
   render({
@@ -189,6 +196,13 @@ export class EnginePeerList extends Component {
             : t('Stop Engine vs. Engine Game'),
           checked: !!engineGameOngoing,
           onClick: this.handleStartStopGameButtonClick
+        }),
+
+        h(ToolBarButton, {
+          icon: './node_modules/@primer/octicons/build/svg/hubot.svg',
+          tooltip: t('AI Assistant'),
+          menu: true,
+          onClick: this.handleAIActionButtonClick
         })
       ),
 

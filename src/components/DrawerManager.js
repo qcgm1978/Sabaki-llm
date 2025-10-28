@@ -8,6 +8,7 @@ import PreferencesDrawer from './drawers/PreferencesDrawer.js'
 import GameChooserDrawer from './drawers/GameChooserDrawer.js'
 import CleanMarkupDrawer from './drawers/CleanMarkupDrawer.js'
 import AdvancedPropertiesDrawer from './drawers/AdvancedPropertiesDrawer.js'
+import AIChatDrawer from './drawers/AIChatDrawer.js'
 
 export default class DrawerManager extends Component {
   constructor() {
@@ -131,6 +132,10 @@ export default class DrawerManager extends Component {
         handicap: +getRootProperty(gameTree, 'HA', 0),
 
         onSubmitButtonClick: this.handleScoreSubmit
+      }),
+
+      h(AIChatDrawer, {
+        show: openDrawer === 'ai-chat'
       })
     )
   }

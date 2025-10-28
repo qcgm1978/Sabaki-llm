@@ -2933,6 +2933,97 @@ class Sabaki extends EventEmitter {
       y
     )
   }
+
+  openAIActionMenu({x, y} = {}) {
+    let t = i18n.context('menu.aiAction')
+    let deepseekKey = setting.get('ai.deepseek_key') || ''
+
+    helper.popupMenu(
+      [
+        {
+          label: t('Configure DeepSeek Key…'),
+          click: async () => {
+            let value = await dialog.showInputBox(
+              t('Enter your DeepSeek API Key:'),
+              deepseekKey
+            )
+            if (value != null) {
+              setting.set('ai.deepseek_key', value)
+            }
+          }
+        },
+        {
+          label: t('Open AI Chat'),
+          click: () => {
+            this.openDrawer('ai-chat')
+          }
+        }
+      ],
+      x,
+      y
+    )
+  }
+
+  async sendDeepSeekMessage(message) {
+    let apiKey = setting.get('ai.deepseek_key')
+    if (!apiKey) {
+      return {error: 'DeepSeek API Key not configured'}
+    }
+
+    try {
+      // Get current game information to provide context
+      let {gameTrees, gameIndex, treePosition} = this.state
+      let tree = gameTrees[gameIndex]
+      let currentNode = tree.get(treePosition)
+      let moves = []
+      let node = currentNode
+
+      // Collect recent moves for context
+      while (node && moves.length < 20) {
+        if (node.data.B) moves.unshift(`B[${node.data.B.join('][')}]`)
+        if (node.data.W) moves.unshift(`W[${node.data.W.join('][')}]`)
+        node = tree.get(node.parentId)
+      }
+
+      let boardContext = moves.join('\n')
+
+      // Call DeepSeek API
+      let response = await fetch(
+        'https://api.deepseek.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are a Go game assistant. Help analyze games, suggest moves, and answer questions about Go strategy. The current game state is:\n' +
+                  boardContext
+              },
+              {
+                role: 'user',
+                content: message
+              }
+            ]
+          })
+        }
+      )
+
+      let data = await response.json()
+      if (data.error) {
+        return {error: data.error.message || 'API Error'}
+      }
+
+      return {content: data.choices[0].message.content}
+    } catch (err) {
+      return {error: err.message}
+    }
+  }
 }
 
 export default new Sabaki()
