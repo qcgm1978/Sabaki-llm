@@ -280,8 +280,6 @@ export default class Goban extends Component {
       variationIndex = -1
     }
   ) {
-    // 添加日志检查接收到的坐标类型值
-    console.log('Goban组件接收到的坐标类型:', coordinatesType)
     let signMap = board.signMap
     let markerMap = board.markers
 
@@ -320,13 +318,14 @@ export default class Goban extends Component {
           x => relativeCoord(x + 1, board.width),
           y => relativeCoord(board.height - y, board.height)
         ]
+      } else if (coordinatesType === 'all-alpha') {
+        // 全字母坐标类型，使用A-Z表示行和列，竖线反过来
+        return [x => alpha[x], y => alpha[y]]
       } else {
-        return [x => alpha[x], y => board.height - y] // Default
+        return [x => alpha[x], y => board.height - y] // Default A1
       }
     }
 
-    // coordinatesType is now passed as a prop from MainView.js
-    console.log('调用getCoordFunctions时使用的坐标类型:', coordinatesType)
     let coordFunctions = getCoordFunctions(coordinatesType)
     let {coordX, coordY} = gobantransformer.transformCoords(
       coordFunctions[0],

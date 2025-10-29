@@ -93,7 +93,7 @@ export default class AIChatDrawer extends Component {
         h(
           'pre',
           {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
-          h('span', {class: 'engine'}, 'AI>  ', h(TextSpinner, {}))
+          h('span', {class: 'engine'}, 'AI >  ', h(TextSpinner, {}))
         )
       )
     }

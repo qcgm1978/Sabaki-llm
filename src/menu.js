@@ -610,6 +610,15 @@ exports.get = function(props = {}) {
                 setting.set('view.show_coordinates', true)
                 setting.set('view.coordinates_type', 'relative')
               }
+            },
+            {
+              label: i18n.t('menu.view', '&All Alphabetic'),
+              type: 'checkbox',
+              checked: !!showCoordinates && coordinatesType === 'all-alpha',
+              click: () => {
+                setting.set('view.show_coordinates', true)
+                setting.set('view.coordinates_type', 'all-alpha')
+              }
             }
           ]
         },
