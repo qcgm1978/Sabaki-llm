@@ -25,8 +25,8 @@ class AIHelper {
       let moves = []
       let node = currentNode
 
-      // 收集最近的20步棋作为上下文
-      while (node && moves.length < 20) {
+      // 收集所有棋步作为上下文
+      while (node) {
         if (node.data.B) moves.unshift(`B[${node.data.B.join('][')}]`)
         if (node.data.W) moves.unshift(`W[${node.data.W.join('][')}]`)
         node = tree.get(node.parentId)

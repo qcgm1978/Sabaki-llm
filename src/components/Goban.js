@@ -255,6 +255,7 @@ export default class Goban extends Component {
 
       crosshair = false,
       showCoordinates = false,
+      coordinatesType = 'A1',
       showMoveColorization = true,
       showMoveNumbers = false,
       showNextMoves = true,
@@ -279,6 +280,8 @@ export default class Goban extends Component {
       variationIndex = -1
     }
   ) {
+    // 添加日志检查接收到的坐标类型值
+    console.log('Goban组件接收到的坐标类型:', coordinatesType)
     let signMap = board.signMap
     let markerMap = board.markers
 
@@ -322,7 +325,8 @@ export default class Goban extends Component {
       }
     }
 
-    let coordinatesType = setting.get('view.coordinates_type')
+    // coordinatesType is now passed as a prop from MainView.js
+    console.log('调用getCoordFunctions时使用的坐标类型:', coordinatesType)
     let coordFunctions = getCoordFunctions(coordinatesType)
     let {coordX, coordY} = gobantransformer.transformCoords(
       coordFunctions[0],

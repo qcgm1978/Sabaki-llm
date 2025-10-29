@@ -10,6 +10,7 @@ import FindBar from './bars/FindBar.js'
 
 import sabaki from '../modules/sabaki.js'
 import * as gametree from '../modules/gametree.js'
+import * as setting from '../setting.js'
 
 export default class MainView extends Component {
   constructor(props) {
@@ -37,26 +38,72 @@ export default class MainView extends Component {
   componentDidMount() {
     // Pressing Ctrl/Cmd should show crosshair cursor on Goban in edit mode
 
-    document.addEventListener('keydown', evt => {
-      if (evt.key !== 'Control' || evt.key !== 'Meta') return
+    // 将匿名函数改为类方法以便在卸载时移除
+    this.handleKeyDown = evt => {
+      if (evt.key !== 'Control' && evt.key !== 'Meta') return
 
       if (this.props.mode === 'edit') {
         this.setState({gobanCrosshair: true})
       }
-    })
+    }
 
-    document.addEventListener('keyup', evt => {
-      if (evt.key !== 'Control' || evt.key !== 'Meta') return
+    this.handleKeyUp = evt => {
+      if (evt.key !== 'Control' && evt.key !== 'Meta') return
 
       if (this.props.mode === 'edit') {
         this.setState({gobanCrosshair: false})
       }
-    })
+    }
+
+    document.addEventListener('keydown', this.handleKeyDown)
+    document.addEventListener('keyup', this.handleKeyUp)
+
+    // 监听设置变化事件，特别是坐标类型的变化
+    this.handleSettingChange = evt => {
+      console.log('设置变化事件捕获:', evt.key, '=>', evt.value)
+      // 对于任何设置变化，都强制更新组件
+      this.forceUpdate()
+    }
+
+    // 简化事件监听器注册方式，直接使用窗口ID作为第一个参数
+    const {remote} = require('electron')
+    const windowId = remote.getCurrentWindow().id.toString()
+
+    // 直接使用setting.events.on注册事件监听器
+    setting.events.on(windowId, 'change', this.handleSettingChange)
+
+    // 存储窗口ID以便在卸载时使用
+    this.windowId = windowId
+
+    // 添加初始日志，显示当前坐标类型设置
+    console.log(
+      'MainView初始化时坐标类型设置:',
+      setting.get('view.coordinates_type')
+    )
   }
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.mode !== 'edit') {
       this.setState({gobanCrosshair: false})
+    }
+  }
+
+  componentWillUnmount() {
+    // 清理键盘事件监听器
+    document.removeEventListener('keydown', this.handleKeyDown)
+    document.removeEventListener('keyup', this.handleKeyUp)
+
+    // 虽然setting.js的events对象没有直接提供removeListener方法
+    // 但我们可以通过重新创建事件发射器来清理监听器
+    if (this.windowId) {
+      const {remote} = require('electron')
+      const currentWindows = remote.BrowserWindow.getAllWindows()
+      // 检查窗口是否仍然存在
+      if (
+        !currentWindows.some(window => window.id.toString() === this.windowId)
+      ) {
+        console.log('窗口已关闭，事件监听器将被自动清理')
+      }
     }
   }
 
@@ -93,6 +140,7 @@ export default class MainView extends Component {
       analysisType,
       showAnalysis,
       showCoordinates,
+      coordinatesType, // 从props中解构coordinatesType
       showMoveColorization,
       showMoveNumbers,
       showNextMoves,
@@ -151,6 +199,9 @@ export default class MainView extends Component {
 
           crosshair: gobanCrosshair,
           showCoordinates,
+          // 添加日志检查实际的坐标类型设置值
+          // 使用从props传递的coordinatesType，而不是直接从setting获取
+          coordinatesType: coordinatesType,
           showMoveColorization,
           showMoveNumbers: mode !== 'edit' && showMoveNumbers,
           showNextMoves: mode !== 'guess' && showNextMoves,
