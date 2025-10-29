@@ -277,3 +277,171 @@
 .ai-chat-drawer .chat-messages::-webkit-scrollbar-thumb:hover {
   background: var(--text-color-secondary);
 }
+
+/* MCP Tools UI Styles */
+.ai-chat-mcp-tools {
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px;
+  background: var(--bg-color);
+  margin-bottom: 15px;
+}
+
+.ai-chat-mcp-tool-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.ai-chat-mcp-tool-list .button {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.ai-chat-mcp-tool-list .button:hover {
+  background: var(--hover-bg-color);
+}
+
+.ai-chat-mcp-tool-list .button.active {
+  background: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+.ai-chat-mcp-tool-details {
+  background: var(--input-bg-color);
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.ai-chat-mcp-tool-details h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: var(--text-color);
+}
+
+.ai-chat-mcp-tool-details p {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--text-color-secondary);
+  font-size: 14px;
+}
+
+.ai-chat-mcp-tool-params {
+  margin-bottom: 15px;
+}
+
+.ai-chat-mcp-tool-param {
+  margin-bottom: 10px;
+}
+
+.ai-chat-mcp-tool-param label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.ai-chat-mcp-tool-param input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  background: var(--input-bg-color);
+  color: var(--text-color);
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.ai-chat-mcp-tool-param input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.ai-chat-mcp-tool-details .button-primary {
+  padding: 8px 16px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.ai-chat-mcp-tool-details .button-primary:hover:not(:disabled) {
+  background: var(--accent-color-dark);
+}
+
+.ai-chat-mcp-tool-details .button-primary:disabled {
+  background: var(--text-color-secondary);
+  cursor: not-allowed;
+}
+
+/* MCP command styles */
+.ai-chat-drawer .command {
+  margin-bottom: 15px;
+  animation: fadeIn 0.3s ease;
+}
+
+.ai-chat-drawer .command.system {
+  background: var(--info-color-light);
+  padding: 10px;
+  border-radius: 6px;
+  font-style: italic;
+}
+
+.ai-chat-drawer .command.tool-result {
+  background: var(--success-color-light);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.ai-chat-drawer .command.tool-result pre {
+  background: transparent !important;
+  border: none !important;
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ai-chat-drawer .command.error {
+  background: var(--error-color-light);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+/* GTP console styles for MCP tools */
+.ai-chat-drawer.gtp-console .ai-chat-mcp-tools {
+  background: #181818;
+  border-bottom: 1px solid #333;
+  padding: 10px;
+  margin-bottom: 0;
+}
+
+.ai-chat-drawer.gtp-console .ai-chat-mcp-tool-list .button {
+  background: #222;
+  border-color: #444;
+  color: #d0d0d0;
+}
+
+.ai-chat-drawer.gtp-console .ai-chat-mcp-tool-list .button:hover {
+  background: #333;
+}
+
+.ai-chat-drawer.gtp-console .ai-chat-mcp-tool-details {
+  background: #222;
+}
+
+.ai-chat-drawer.gtp-console .ai-chat-mcp-tool-param input {
+  background: #111;
+  border-color: #444;
+  color: #d0d0d0;
+}

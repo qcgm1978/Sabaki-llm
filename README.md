@@ -22,10 +22,37 @@
 - [GTP engines](https://github.com/SabakiHQ/Sabaki/blob/master/docs/guides/engines.md)
   support with
   [board analysis for supported engines](https://github.com/SabakiHQ/Sabaki/blob/master/docs/guides/engine-analysis-integration.md)
+- MCP (Model Context Protocol) integration for seamless collaboration between
+  LLMs and KataGo
+  - Use natural language to request board analysis
+  - Get detailed explanations of Go positions and moves
+  - Ask questions about strategy, tactics, and game principles
 - Guess mode
 - Autoplay games
 
 ![Screenshot](screenshot.png)
+
+## MCP
+
+模型上下文协议（Model Context Protocol，简称 MCP）是由 Anthropic 于 2024 年底提
+出并开源的一种通信协议。它的主要目的是解决大型语言模型(LLM)与外部数据源及工具之
+间无缝集成的需求，被比作"大模型的 HTTP 协议"。
+
+关于 MCP 与 KataGo 的关系：
+
+1. MCP 的核心功能 ：MCP 旨在为 AI 模型提供统一的方式来连接各种外部数据服务和工具
+   ，通过标准化协议替代碎片化的集成方案 3 。
+2. LLM 与专业工具交互 ：从理论上讲，MCP 确实可以作为 LLM 与专业领域工具（如
+   KataGo 围棋引擎）之间的桥梁。通过 MCP，LLM 可以将围棋相关问题传递给 KataGo 处
+   理，然后接收 KataGo 的专业分析结果 4 。
+3. 智能体架构优势 ：这种集成正好符合智能体/Agent 架构的理念 - LLM 作为"大脑"负责
+   理解问题和生成回答，专业工具（如 KataGo）作为"专业技能扩展"提供领域内的精准分
+   析 1 。
+4. 实际应用价值 ：通过 MCP 实现 LLM 与 KataGo 的交互，可以结合二者优势 - 利用
+   KataGo 的专业围棋分析能力和 LLM 的自然语言理解与解释能力，为用户提供既专业又
+   易于理解的围棋分析结果 5 。总结来说，MCP 确实可以作为实现 LLM 与 KataGo 交互
+   的技术基础，它为不同系统之间的安全、高效信息共享提供了标准化框架，使通用 AI
+   能够与专业领域工具协作，提供更全面的服务。
 
 ## Documentation
 

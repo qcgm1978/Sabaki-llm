@@ -2,6 +2,7 @@ import {createElement as h, Component} from 'preact/compat'
 import sabaki from '../../modules/sabaki.js'
 import i18n from '../../i18n.js'
 import TextSpinner from '../TextSpinner.js'
+import mcpHelper from '../../modules/mcpHelper.js'
 
 const t = i18n.context('AIChatDrawer')
 
@@ -12,7 +13,10 @@ export default class AIChatDrawer extends Component {
     this.state = {
       messages: [],
       input: '',
-      sending: false
+      sending: false,
+      showMCPTools: false,
+      activeTool: null,
+      toolParams: {}
     }
     this.messagesContainer = null
   }
@@ -84,6 +88,87 @@ export default class AIChatDrawer extends Component {
     }
   }
 
+  toggleMCPTools = () => {
+    this.setState(prevState => ({
+      showMCPTools: !prevState.showMCPTools,
+      activeTool: prevState.showMCPTools ? null : prevState.activeTool
+    }))
+  }
+
+  handleToolSelect = tool => {
+    // 初始化工具参数为默认值
+    let defaultParams = {}
+    if (tool.parameters && tool.parameters.properties) {
+      Object.keys(tool.parameters.properties).forEach(key => {
+        if (tool.parameters.properties[key].default !== undefined) {
+          defaultParams[key] = tool.parameters.properties[key].default
+        }
+      })
+    }
+
+    this.setState({activeTool: tool, toolParams: defaultParams})
+  }
+
+  handleToolParamChange = (paramName, value) => {
+    this.setState(prevState => ({
+      toolParams: {
+        ...prevState.toolParams,
+        [paramName]: value
+      }
+    }))
+  }
+
+  handleToolExecute = async () => {
+    if (!this.state.activeTool || this.state.sending) return
+
+    this.setState(prevState => ({
+      sending: true,
+      messages: [
+        ...prevState.messages,
+        {
+          role: 'system',
+          content: `正在执行工具: ${this.state.activeTool.name}`
+        }
+      ]
+    }))
+
+    try {
+      // 调用MCP工具
+      let response = await sabaki.aiManager.sendDeepSeekMessage({
+        mcp: {
+          tool: {
+            name: this.state.activeTool.name,
+            description: this.state.activeTool.description,
+            parameters: this.state.toolParams
+          }
+        }
+      })
+
+      this.setState(prevState => ({
+        messages: [
+          ...prevState.messages,
+          {
+            role: 'tool-result',
+            content: response.error || response.content,
+            toolName: this.state.activeTool.name
+          }
+        ],
+        sending: false
+      }))
+    } catch (error) {
+      this.setState(prevState => ({
+        messages: [
+          ...prevState.messages,
+          {
+            role: 'error',
+            content: `工具执行失败: ${error.message}`
+          }
+        ],
+        sending: false
+      }))
+    }
+  }
+
   renderMessage(message) {
     // 处理等待消息的特殊情况
     if (message.role === 'waiting') {
@@ -93,7 +178,34 @@ export default class AIChatDrawer extends Component {
         h(
           'pre',
           {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
-          h('span', {class: 'engine'}, 'AI >  ', h(TextSpinner, {}))
+          h('span', {class: 'engine'}, 'AI ', h(TextSpinner, {}))
+        )
+      )
+    }
+
+    // 处理工具结果消息
+    if (message.role === 'tool-result') {
+      return h(
+        'li',
+        {class: 'command tool-result'},
+        h(
+          'pre',
+          {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
+          h('span', {class: 'engine'}, `工具结果 (${message.toolName})>  `),
+          h('span', null, message.content)
+        )
+      )
+    }
+
+    // 处理系统消息
+    if (message.role === 'system') {
+      return h(
+        'li',
+        {class: 'command system'},
+        h(
+          'pre',
+          {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
+          h('span', {class: 'internal'}, message.content)
         )
       )
     }
@@ -125,6 +237,78 @@ export default class AIChatDrawer extends Component {
     )
   }
 
+  renderMCPTools() {
+    let availableTools = mcpHelper.getAvailableEndpoints()
+
+    return h(
+      'div',
+      {class: 'ai-chat-mcp-tools'},
+      h(
+        'div',
+        {class: 'ai-chat-mcp-tool-list'},
+        availableTools.map(tool =>
+          h(
+            'button',
+            {
+              key: tool.id,
+              class: `button button-small ${
+                this.state.activeTool?.id === tool.id ? 'active' : ''
+              }`,
+              onClick: () => this.handleToolSelect(tool)
+            },
+            tool.name
+          )
+        )
+      ),
+
+      this.state.activeTool &&
+        h(
+          'div',
+          {class: 'ai-chat-mcp-tool-details'},
+          h('h4', null, this.state.activeTool.name),
+          h('p', null, this.state.activeTool.description),
+
+          this.state.activeTool.parameters &&
+            this.state.activeTool.parameters.properties &&
+            h(
+              'div',
+              {class: 'ai-chat-mcp-tool-params'},
+              Object.entries(this.state.activeTool.parameters.properties).map(
+                ([paramName, paramDef]) =>
+                  h(
+                    'div',
+                    {key: paramName, class: 'ai-chat-mcp-tool-param'},
+                    h('label', null, paramDef.description),
+                    h('input', {
+                      type: 'number',
+                      value:
+                        this.state.toolParams[paramName] ||
+                        paramDef.default ||
+                        '',
+                      onChange: e =>
+                        this.handleToolParamChange(
+                          paramName,
+                          parseFloat(e.target.value)
+                        ),
+                      min: '1'
+                    })
+                  )
+              )
+            ),
+
+          h(
+            'button',
+            {
+              class: 'button button-primary',
+              onClick: this.handleToolExecute,
+              disabled: this.state.sending
+            },
+            t('Execute')
+          )
+        )
+    )
+  }
+
   render() {
     if (!this.props.show) return null
 
@@ -136,28 +320,44 @@ export default class AIChatDrawer extends Component {
         {class: 'drawer-header'},
         t('AI Assistant'),
         h(
-          'button',
-          {
-            onClick: this.handleClearMessages,
-            class: 'drawer-action',
-            title: t('Clear messages')
-          },
+          'div',
+          {class: 'drawer-actions'},
           h(
-            'span',
+            'button',
             {
-              class: 'icon-trash',
-              style: {
-                width: '16px',
-                height: '16px',
-                display: 'inline-block',
-                textAlign: 'center',
-                lineHeight: '16px'
-              }
+              onClick: this.toggleMCPTools,
+              class: `drawer-action ${this.state.showMCPTools ? 'active' : ''}`,
+              title: t('MCP Tools')
             },
-            '🗑️'
+            '🔧'
+          ),
+          h(
+            'button',
+            {
+              onClick: this.handleClearMessages,
+              class: 'drawer-action',
+              title: t('Clear messages')
+            },
+            h(
+              'span',
+              {
+                class: 'icon-trash',
+                style: {
+                  width: '16px',
+                  height: '16px',
+                  display: 'inline-block',
+                  textAlign: 'center',
+                  lineHeight: '16px'
+                }
+              },
+              '🗑️'
+            )
           )
         )
       ),
+
+      this.state.showMCPTools && this.renderMCPTools(),
+
       h(
         'ol',
         {ref: el => (this.messagesContainer = el), class: 'chat-messages'},
