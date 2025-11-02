@@ -66,6 +66,16 @@ function newWindow(path) {
     setting.set('window.maximized', false)
   })
 
+  // Handle close event to allow for save confirmation
+  window.on('close', evt => {
+    // Don't proceed with close immediately
+    evt.preventDefault()
+
+    // Ask renderer process if we can close
+    window.webContents.send('can-close-window')
+  })
+
+  // Handle closed event (after window is actually closed)
   window.on('closed', () => {
     window = null
   })

@@ -74,12 +74,6 @@ export default class MainView extends Component {
 
     // 存储窗口ID以便在卸载时使用
     this.windowId = windowId
-
-    // 添加初始日志，显示当前坐标类型设置
-    console.log(
-      'MainView初始化时坐标类型设置:',
-      setting.get('view.coordinates_type')
-    )
   }
 
   componentWillReceiveProps(nextProps) {

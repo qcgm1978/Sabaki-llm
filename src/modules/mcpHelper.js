@@ -1,6 +1,7 @@
 import * as remote from '@electron/remote'
 const setting = remote.require('./setting')
 import engineSyncer from './enginesyncer.js'
+import sabaki from './sabaki.js'
 
 /**
  * MCP (Model Context Protocol) 助手模块，处理LLM与KataGo等工具的通信
@@ -74,84 +75,38 @@ class MCPHelper {
    */
   async handleKataGoAnalysis(params, gameContext) {
     try {
-      // 获取当前引擎，优先使用gtp.engine，如果不存在则尝试从engines.list获取第一个引擎
-      let engine = setting.get('gtp.engine')
+      // 尝试复用已连接的引擎实例
+      let syncer = null
+      if (
+        sabaki &&
+        sabaki.state &&
+        sabaki.state.attachedEngineSyncers &&
+        sabaki.state.attachedEngineSyncers.length > 0
+      ) {
+        // 使用第一个已连接的引擎
+        syncer = sabaki.state.attachedEngineSyncers[0]
+      } else {
+        // 获取当前引擎，优先使用gtp.engine，如果不存在则尝试从engines.list获取第一个引擎
+        let engine = setting.get('gtp.engine')
 
-      // 如果gtp.engine不存在或无效，尝试从engines.list获取
-      if (!engine || !engine.path) {
-        let enginesList = setting.get('engines.list') || []
-        if (enginesList.length > 0) {
-          engine = enginesList[0]
+        // 如果gtp.engine不存在或无效，尝试从engines.list获取
+        if (!engine || !engine.path) {
+          let enginesList = setting.get('engines.list') || []
+          if (enginesList.length > 0) {
+            engine = enginesList[0]
+          }
         }
+
+        if (!engine || !engine.path) {
+          return {error: '未配置KataGo引擎'}
+        }
+
+        // 创建引擎同步器
+        syncer = new engineSyncer(engine)
+
+        // 启动引擎
+        syncer.start()
       }
-
-      if (!engine || !engine.path) {
-        return {error: '未配置KataGo引擎'}
-      }
-
-      // 创建引擎同步器
-      // todo "_enginesyncer_js__WEBPACK_IMPORTED_MODULE_1__.default.EngineSyncer is not a constructor"
-      // maybe 封装
-      /*
-      name
-version
-known_command
-list_commands
-quit
-boardsize
-rectangular_boardsize
-clear_board
-set_position
-komi
-get_komi
-play
-undo
-kata-get-rules
-kata-set-rule
-kata-set-rules
-kata-get-models
-kata-get-param
-kata-set-param
-kata-list-params
-kgs-rules
-genmove
-kata-search
-kata-search_cancellable
-genmove_debug
-kata-search_debug
-clear_cache
-showboard
-fixed_handicap
-place_free_handicap
-set_free_handicap
-time_settings
-kgs-time_settings
-time_left
-kata-list_time_settings
-kata-time_settings
-final_score
-final_status_list
-loadsgf
-printsgf
-lz-genmove_analyze
-kata-genmove_analyze
-kata-search_analyze
-kata-search_analyze_cancellable
-lz-analyze
-kata-analyze
-kata-raw-nn
-kata-raw-human-nn
-cputime
-gomill-cpu_time
-kata-benchmark
-kata-debug-print-tc
-debug_moves
-stop
-*/
-      let syncer = new engineSyncer.EngineSyncer(engine)
-
-      // 启动引擎
-      syncer.start()
 
       // 同步当前棋局状态
       await syncer.sync(
@@ -159,10 +114,10 @@ stop
         gameContext.treePosition
       )
 
-      // 发送分析命令
+      let visits = params.visits || 50
       let analyzeCommand = {
         name: 'lz-analyze',
-        args: [params.visits.toString()]
+        args: [visits.toString()]
       }
 
       // 等待分析结果
@@ -183,8 +138,15 @@ stop
                 }))
             }
 
-            // 停止引擎
-            syncer.stop()
+            // 只在不是已连接引擎的情况下停止引擎
+            if (
+              !sabaki ||
+              !sabaki.state ||
+              !sabaki.state.attachedEngineSyncers ||
+              !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
+            ) {
+              syncer.stop()
+            }
             resolve({data: result})
           }
         })
@@ -194,7 +156,15 @@ stop
 
         // 超时处理
         setTimeout(() => {
-          syncer.stop()
+          // 只在不是已连接引擎的情况下停止引擎
+          if (
+            !sabaki ||
+            !sabaki.state ||
+            !sabaki.state.attachedEngineSyncers ||
+            !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
+          ) {
+            syncer.stop()
+          }
           resolve({error: '分析超时'})
         }, 10000)
       })
@@ -211,26 +181,41 @@ stop
    */
   async handleKataGoScore(params, gameContext) {
     try {
-      // 获取当前引擎，优先使用gtp.engine，如果不存在则尝试从engines.list获取第一个引擎
-      let engine = setting.get('gtp.engine')
+      // 尝试复用已连接的引擎实例
+      let syncer = null
+      let needStop = false
 
-      // 如果gtp.engine不存在或无效，尝试从engines.list获取
-      if (!engine || !engine.path) {
-        let enginesList = setting.get('engines.list') || []
-        if (enginesList.length > 0) {
-          engine = enginesList[0]
+      if (
+        sabaki &&
+        sabaki.state &&
+        sabaki.state.attachedEngineSyncers &&
+        sabaki.state.attachedEngineSyncers.length > 0
+      ) {
+        // 使用第一个已连接的引擎
+        syncer = sabaki.state.attachedEngineSyncers[0]
+      } else {
+        // 获取当前引擎，优先使用gtp.engine，如果不存在则尝试从engines.list获取第一个引擎
+        let engine = setting.get('gtp.engine')
+
+        // 如果gtp.engine不存在或无效，尝试从engines.list获取
+        if (!engine || !engine.path) {
+          let enginesList = setting.get('engines.list') || []
+          if (enginesList.length > 0) {
+            engine = enginesList[0]
+          }
         }
+
+        if (!engine || !engine.path) {
+          return {error: '未配置KataGo引擎'}
+        }
+
+        // 创建引擎同步器
+        syncer = new engineSyncer(engine)
+
+        // 启动引擎
+        syncer.start()
+        needStop = true
       }
-
-      if (!engine || !engine.path) {
-        return {error: '未配置KataGo引擎'}
-      }
-
-      // 创建引擎同步器
-      let syncer = new engineSyncer.EngineSyncer(engine)
-
-      // 启动引擎
-      syncer.start()
 
       // 同步当前棋局状态
       await syncer.sync(
@@ -241,8 +226,10 @@ stop
       // 发送评分命令
       let response = await syncer.queueCommand({name: 'final_score'})
 
-      // 停止引擎
-      await syncer.stop()
+      // 只在不是已连接引擎的情况下停止引擎
+      if (needStop) {
+        await syncer.stop()
+      }
 
       return {data: {score: response.content.trim()}}
     } catch (err) {

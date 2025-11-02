@@ -180,22 +180,35 @@ class App extends Component {
 
     // Handle window closing
 
+    const handleWindowClose = () => {
+      if (this.closeWindow) return false
+
+      if (sabaki.askForSave()) {
+        sabaki.detachEngines(
+          this.state.attachedEngineSyncers.map(syncer => syncer.id)
+        )
+
+        gtplogger.close()
+        this.closeWindow = true
+        return true
+      }
+      return false
+    }
+
+    // Browser beforeunload event
     window.addEventListener('beforeunload', evt => {
-      if (this.closeWindow) return
+      if (!handleWindowClose()) {
+        evt.preventDefault()
+        evt.returnValue = ' '
+      }
+    })
 
-      evt.returnValue = ' '
-
-      setTimeout(() => {
-        if (sabaki.askForSave()) {
-          sabaki.detachEngines(
-            this.state.attachedEngineSyncers.map(syncer => syncer.id)
-          )
-
-          gtplogger.close()
-          this.closeWindow = true
-          sabaki.window.close()
-        }
-      })
+    // Listen for 'can-close-window' message from main process
+    ipcRenderer.on('can-close-window', () => {
+      if (handleWindowClose()) {
+        // Allow window to close
+        sabaki.window.destroy()
+      }
     })
 
     sabaki.newFile()

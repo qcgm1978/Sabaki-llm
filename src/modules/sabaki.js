@@ -515,7 +515,25 @@ class Sabaki extends EventEmitter {
       this.setState({representedFilename: filename})
       this.fileHash = this.generateFileHash()
 
-      if (setting.get('game.goto_end_after_loading')) {
+      // 尝试恢复之前的浏览位置
+      let restorePosition = false
+      if (setting.get('file.save_position_history')) {
+        let positionHistory = setting.get('file.position_history') || {}
+        let savedPosition = positionHistory[filename]
+
+        if (savedPosition && gameTrees[savedPosition.gameIndex]) {
+          let tree = gameTrees[savedPosition.gameIndex]
+          // 检查树位置是否存在
+          if (tree.get(savedPosition.treePosition) !== null) {
+            this.setState({gameIndex: savedPosition.gameIndex})
+            this.setCurrentTreePosition(tree, savedPosition.treePosition)
+            restorePosition = true
+          }
+        }
+      }
+
+      // 如果没有恢复位置且设置了加载后跳转到结尾，则跳转到结尾
+      if (!restorePosition && setting.get('game.goto_end_after_loading')) {
         this.goToEnd()
       }
     }
@@ -781,7 +799,42 @@ class Sabaki extends EventEmitter {
       else if (answer === 2) return false
     }
 
+    // 保存文件位置历史
+    if (
+      setting.get('file.save_position_history') &&
+      this.state.representedFilename
+    ) {
+      this.saveFilePositionHistory()
+    }
+
     return true
+  }
+
+  saveFilePositionHistory() {
+    if (!this.state.representedFilename) return
+
+    let positionHistory = setting.get('file.position_history') || {}
+    let maxEntries = setting.get('file.position_history_max_entries') || 50
+
+    // 记录当前文件的位置
+    positionHistory[this.state.representedFilename] = {
+      treePosition: this.state.treePosition,
+      gameIndex: this.state.gameIndex,
+      timestamp: Date.now()
+    }
+
+    // 清理超过最大条目数的旧记录
+    if (Object.keys(positionHistory).length > maxEntries) {
+      let entries = Object.entries(positionHistory)
+      entries.sort((a, b) => a[1].timestamp - b[1].timestamp)
+
+      while (entries.length > maxEntries) {
+        let [oldFilePath] = entries.shift()
+        delete positionHistory[oldFilePath]
+      }
+    }
+
+    setting.set('file.position_history', positionHistory)
   }
 
   askForReload() {
@@ -818,6 +871,25 @@ class Sabaki extends EventEmitter {
 
   // Playing
 
+  findVertexMove(tree, startId, vertex) {
+    let board = gametree.getBoard(tree, startId)
+    for (let node of tree.listNodesVertically(startId, -1, {})) {
+      if (node.data.B) {
+        let moveVertex = sgf.parseVertex(node.data.B[0])
+        if (helper.vertexEquals(moveVertex, vertex)) {
+          return node.id
+        }
+      }
+      if (node.data.W) {
+        let moveVertex = sgf.parseVertex(node.data.W[0])
+        if (helper.vertexEquals(moveVertex, vertex)) {
+          return node.id
+        }
+      }
+    }
+    return null
+  }
+
   clickVertex(vertex, {button = 0, ctrlKey = false, x = 0, y = 0} = {}) {
     this.closeDrawer()
 
@@ -835,11 +907,21 @@ class Sabaki extends EventEmitter {
 
     if (['play', 'autoplay'].includes(this.state.mode)) {
       if (button === 0) {
-        if (board.get(vertex) === 0) {
+        // 检查是否点击了已有的棋子
+        if (board.get(vertex) !== 0) {
+          // 查找该棋子放置的节点
+          let moveNodeId = this.findVertexMove(tree, treePosition, vertex)
+          if (moveNodeId) {
+            // 设置当前位置为该节点
+            this.setCurrentTreePosition(tree, moveNodeId)
+            return
+          }
+        } else {
           this.makeMove(vertex, {
             generateEngineMove: this.state.engineGameOngoing == null
           })
-        } else if (
+        }
+        if (
           board.markers[vy][vx] != null &&
           board.markers[vy][vx].type === 'point' &&
           setting.get('edit.click_currentvertex_to_remove')
@@ -1420,7 +1502,17 @@ class Sabaki extends EventEmitter {
 
     this.recordHistory({prevGameIndex, prevTreePosition})
 
-    if (navigated) this.events.emit('navigate')
+    if (navigated) {
+      this.events.emit('navigate')
+
+      // 保存文件位置历史
+      if (
+        setting.get('file.save_position_history') &&
+        this.state.representedFilename
+      ) {
+        this.saveFilePositionHistory()
+      }
+    }
 
     // Continuous analysis
 
