@@ -160,7 +160,7 @@ class AIHelper {
               {
                 role: 'system',
                 content:
-                  '你是一个围棋助手，负责将工具执行结果用自然、友好的语言总结给用户。请注意，你必须返回json格式的响应。'
+                  '你是一个围棋助手，负责将工具执行结果用自然、友好的语言总结给用户。请注意，你必须返回json格式的响应，并且JSON对象中必须包含一个名为"content"的属性，用于存储总结内容。'
               },
               {
                 role: 'user',
@@ -181,9 +181,13 @@ class AIHelper {
         return {error: data.error.message || 'API Error'}
       }
 
-      const content = JSON.parse(data.choices[0].message.content).summary
+      const parsedContent = JSON.parse(data.choices[0].message.content)
+      const content = parsedContent.content || String(parsedContent)
       return {
-        content: content.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
+        content: (typeof content === 'string'
+          ? content
+          : String(content)
+        ).replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
       }
     } catch (err) {
       return {error: err.message}
