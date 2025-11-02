@@ -16,7 +16,10 @@ export default class AIChatDrawer extends Component {
       sending: false,
       showMCPTools: false,
       activeTool: null,
-      toolParams: {}
+      toolParams: {},
+      history: [],
+      currentHistoryIndex: -1,
+      tempInput: ''
     }
     this.messagesContainer = null
   }
@@ -29,12 +32,26 @@ export default class AIChatDrawer extends Component {
     let message = this.state.input.trim()
     if (!message || this.state.sending) return
 
+    let history = [...this.state.history]
+    if (!history.includes(message)) {
+      history.unshift(message)
+      if (history.length > 50) {
+        history = history.slice(0, 50)
+      }
+    }
+
     const newMessages = [
       ...this.state.messages,
       {role: 'user', content: message},
       {role: 'waiting', id: Date.now()}
     ]
-    this.setState({sending: true, messages: newMessages, input: ''})
+    this.setState({
+      sending: true,
+      messages: newMessages,
+      input: '',
+      history,
+      currentHistoryIndex: -1
+    })
 
     try {
       let response = await sabaki.sendDeepSeekMessage(message)
@@ -71,7 +88,38 @@ export default class AIChatDrawer extends Component {
     if (evt.key === 'Enter' && !evt.shiftKey) {
       evt.preventDefault()
       this.handleSendMessage()
+    } else if (evt.key === 'ArrowUp') {
+      evt.preventDefault()
+      this.navigateHistory(1)
+    } else if (evt.key === 'ArrowDown') {
+      evt.preventDefault()
+      this.navigateHistory(-1)
     }
+  }
+
+  navigateHistory(direction) {
+    const {history, currentHistoryIndex, input} = this.state
+
+    if (currentHistoryIndex === -1 && direction === 1) {
+      this.setState({tempInput: input})
+    }
+
+    let newIndex = currentHistoryIndex + direction
+
+    if (newIndex >= history.length) {
+      newIndex = history.length - 1
+    } else if (newIndex < -1) {
+      newIndex = -1
+    }
+
+    let newInput = ''
+    if (newIndex === -1) {
+      newInput = this.state.tempInput
+    } else {
+      newInput = history[newIndex]
+    }
+
+    this.setState({input: newInput, currentHistoryIndex: newIndex})
   }
 
   handleClearMessages = () => {
