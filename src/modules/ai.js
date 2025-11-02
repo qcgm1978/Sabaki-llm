@@ -62,29 +62,22 @@ class AIHelper {
               {
                 role: 'system',
                 content:
-                  '你是一个围棋助手，能够分析棋局、提供建议并回答关于围棋策略的问题。\n' +
+                  '你是一个围棋助手，能够分析棋局、提供建议并回答关于围棋策略的问题。请注意，你必须返回json格式的响应。\n' +
                   '你可以使用以下MCP工具来增强你的分析能力:\n' +
                   toolsInfo +
                   '\n' +
-                  '当用户询问需要深入分析的问题时，你可以生成MCP格式的工具调用请求。\n' +
+                  '当用户询问需要深入分析的问题时，你必须生成纯JSON格式的MCP工具调用请求，不要在JSON前后添加任何其他文本。\n' +
                   'MCP调用格式示例:\n' +
-                  '{\n' +
-                  '  "mcp": {\n' +
-                  '    "tool": {\n' +
-                  '      "name": "工具名称",\n' +
-                  '      "description": "工具描述",\n' +
-                  '      "parameters": {参数对象}\n' +
-                  '    }\n' +
-                  '  }\n' +
-                  '}\n' +
-                  '当前游戏状态:\n' +
+                  '{"mcp":{"tool":{"name":"工具名称","description":"工具描述","parameters":{参数对象}}}}' +
+                  '\n当前游戏状态:\n' +
                   boardContext
               },
               {
                 role: 'user',
                 content: message
               }
-            ]
+            ],
+            response_format: {type: 'json_object'}
           })
         }
       )
@@ -95,34 +88,48 @@ class AIHelper {
       }
 
       let aiResponse = data.choices[0].message.content
-
-      // 检查响应是否包含MCP工具调用
-      try {
-        // 尝试解析响应为JSON，检查是否包含MCP调用
-        let parsedResponse = JSON.parse(aiResponse)
-        if (parsedResponse.mcp && parsedResponse.mcp.tool) {
-          // 处理MCP工具调用
-          let toolResult = await mcpHelper.handleMCPRequest(
-            parsedResponse,
-            gameContext
-          )
-
-          if (toolResult.error) {
-            return {content: `工具调用失败: ${toolResult.error}`}
-          }
-
-          // 将工具结果传递给AI进行总结
-          return await this.sendToolResultToAI(
-            message,
-            toolResult.data,
-            gameContext
-          )
+      // 如果是json_object格式，需要从content中解析出实际内容
+      if (
+        typeof aiResponse === 'string' &&
+        aiResponse.startsWith('{') &&
+        aiResponse.endsWith('}')
+      ) {
+        try {
+          let parsed = JSON.parse(aiResponse)
+          if (parsed.content) aiResponse = parsed.content
+        } catch (e) {
+          // 如果解析失败，保持原内容不变
         }
-      } catch (e) {
-        // 响应不是有效的JSON，直接返回
       }
 
-      return {content: aiResponse.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')}
+      // 检查响应是否包含MCP工具调用
+      let parsedResponse = JSON.parse(aiResponse)
+      if (parsedResponse.mcp && parsedResponse.mcp.tool) {
+        // 处理MCP工具调用
+        let toolResult = await mcpHelper.handleMCPRequest(
+          parsedResponse,
+          gameContext
+        )
+
+        if (toolResult.error) {
+          return {content: `工具调用失败: ${toolResult.error}`}
+        }
+
+        // 将工具结果传递给AI进行总结
+        return await this.sendToolResultToAI(
+          message,
+          toolResult.data,
+          gameContext
+        )
+      }
+
+      // 移除Markdown格式并返回内容
+      return {
+        content: (typeof aiResponse === 'string'
+          ? aiResponse
+          : String(aiResponse)
+        ).replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
+      }
     } catch (err) {
       return {error: err.message}
     }
@@ -153,7 +160,7 @@ class AIHelper {
               {
                 role: 'system',
                 content:
-                  '你是一个围棋助手，负责将工具执行结果用自然、友好的语言总结给用户。'
+                  '你是一个围棋助手，负责将工具执行结果用自然、友好的语言总结给用户。请注意，你必须返回json格式的响应。'
               },
               {
                 role: 'user',
@@ -163,7 +170,8 @@ class AIHelper {
                   2
                 )}`
               }
-            ]
+            ],
+            response_format: {type: 'json_object'}
           })
         }
       )
@@ -173,11 +181,9 @@ class AIHelper {
         return {error: data.error.message || 'API Error'}
       }
 
+      const content = JSON.parse(data.choices[0].message.content).summary
       return {
-        content: data.choices[0].message.content.replace(
-          /\*{1,3}(.*?)\*{1,3}/g,
-          '$1'
-        )
+        content: content.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
       }
     } catch (err) {
       return {error: err.message}
