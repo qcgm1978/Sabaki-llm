@@ -57,6 +57,18 @@ class MCPHelper {
       },
       handler: this.handleKataGoScore.bind(this)
     })
+
+    // 注册获取引擎名称端点
+    this.registerEndpoint({
+      id: 'get-engine-name',
+      name: '获取引擎名称',
+      description: '获取当前配置的AI引擎名称',
+      parameters: {
+        type: 'object',
+        properties: {}
+      },
+      handler: this.handleGetEngineName.bind(this)
+    })
   }
 
   /**
@@ -171,62 +183,66 @@ class MCPHelper {
    * @param {Object} gameContext - 游戏上下文
    * @returns {Promise<Object>} 评分结果
    */
-  async handleKataGoScore(params, gameContext) {
-    try {
-      // 尝试复用已连接的引擎实例
-      let syncer = null
-      let needStop = false
+  async handleGetEngineName(params, gameContext) {
+    let engine = setting.get('gtp.engine')
 
-      if (
-        sabaki &&
-        sabaki.state &&
-        sabaki.state.attachedEngineSyncers &&
-        sabaki.state.attachedEngineSyncers.length > 0
-      ) {
-        // 使用第一个已连接的引擎
-        syncer = sabaki.state.attachedEngineSyncers[0]
-      } else {
-        // 获取当前引擎，优先使用gtp.engine，如果不存在则尝试从engines.list获取第一个引擎
-        let engine = setting.get('gtp.engine')
-
-        // 如果gtp.engine不存在或无效，尝试从engines.list获取
-        if (!engine || !engine.path) {
-          let enginesList = setting.get('engines.list') || []
-          if (enginesList.length > 0) {
-            engine = enginesList[0]
-          }
-        }
-
-        if (!engine || !engine.path) {
-          return {error: '未配置KataGo引擎'}
-        }
-
-        // 创建引擎同步器
-        syncer = new engineSyncer(engine)
-
-        // 启动引擎
-        syncer.start()
-        needStop = true
+    if (!engine || !engine.path) {
+      let enginesList = setting.get('engines.list') || []
+      if (enginesList.length > 0) {
+        engine = enginesList[0]
       }
-
-      // 同步当前棋局状态
-      await syncer.sync(
-        gameContext.gameTrees[gameContext.gameIndex],
-        gameContext.treePosition
-      )
-
-      // 发送评分命令
-      let response = await syncer.queueCommand({name: 'final_score'})
-
-      // 只在不是已连接引擎的情况下停止引擎
-      if (needStop) {
-        await syncer.stop()
-      }
-
-      return {data: {score: response.content.trim()}}
-    } catch (err) {
-      return {error: err.message}
     }
+
+    if (!engine || !engine.path) {
+      return {data: {name: '未配置引擎'}}
+    }
+
+    let engineName = engine.name || '未知引擎'
+    return {data: {name: engineName}}
+  }
+
+  async handleKataGoScore(params, gameContext) {
+    let syncer = null
+    let needStop = false
+
+    if (
+      sabaki &&
+      sabaki.state &&
+      sabaki.state.attachedEngineSyncers &&
+      sabaki.state.attachedEngineSyncers.length > 0
+    ) {
+      syncer = sabaki.state.attachedEngineSyncers[0]
+    } else {
+      let engine = setting.get('gtp.engine')
+
+      if (!engine || !engine.path) {
+        let enginesList = setting.get('engines.list') || []
+        if (enginesList.length > 0) {
+          engine = enginesList[0]
+        }
+      }
+
+      if (!engine || !engine.path) {
+        return {error: '未配置KataGo引擎'}
+      }
+
+      syncer = new engineSyncer(engine)
+      syncer.start()
+      needStop = true
+    }
+
+    await syncer.sync(
+      gameContext.gameTrees[gameContext.gameIndex],
+      gameContext.treePosition
+    )
+
+    let response = await syncer.queueCommand({name: 'final_score'})
+
+    if (needStop) {
+      await syncer.stop()
+    }
+
+    return {data: {score: response.content.trim()}}
   }
 
   /**

@@ -122,7 +122,7 @@ class AIHelper {
         // 响应不是有效的JSON，直接返回
       }
 
-      return {content: aiResponse}
+      return {content: aiResponse.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')}
     } catch (err) {
       return {error: err.message}
     }
@@ -173,7 +173,12 @@ class AIHelper {
         return {error: data.error.message || 'API Error'}
       }
 
-      return {content: data.choices[0].message.content}
+      return {
+        content: data.choices[0].message.content.replace(
+          /\*{1,3}(.*?)\*{1,3}/g,
+          '$1'
+        )
+      }
     } catch (err) {
       return {error: err.message}
     }
