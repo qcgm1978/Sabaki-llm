@@ -69,6 +69,17 @@ class MCPHelper {
       },
       handler: this.handleGetEngineName.bind(this)
     })
+
+    this.registerEndpoint({
+      id: 'get-engine-commands',
+      name: '获取引擎命令列表',
+      description: '获取当前配置的AI引擎支持的命令列表',
+      parameters: {
+        type: 'object',
+        properties: {}
+      },
+      handler: this.handleGetEngineCommands.bind(this)
+    })
   }
 
   /**
@@ -199,6 +210,52 @@ class MCPHelper {
 
     let engineName = engine.name || '未知引擎'
     return {data: {name: engineName}}
+  }
+
+  async handleGetEngineCommands(params, gameContext) {
+    let syncer = null
+    let needStop = false
+
+    if (
+      sabaki &&
+      sabaki.state &&
+      sabaki.state.attachedEngineSyncers &&
+      sabaki.state.attachedEngineSyncers.length > 0
+    ) {
+      syncer = sabaki.state.attachedEngineSyncers[0]
+    } else {
+      let engine = setting.get('gtp.engine')
+
+      if (!engine || !engine.path) {
+        let enginesList = setting.get('engines.list') || []
+        if (enginesList.length > 0) {
+          engine = enginesList[0]
+        }
+      }
+
+      if (!engine || !engine.path) {
+        return {error: '未配置引擎'}
+      }
+
+      syncer = new engineSyncer(engine)
+      syncer.start()
+      needStop = true
+    }
+
+    let response = await syncer.queueCommand({name: 'list_commands'})
+
+    if (needStop) {
+      await syncer.stop()
+    }
+
+    let commands = response.content
+      .split('\n')
+      .filter(
+        line => line.trim() && !line.startsWith('=') && !line.startsWith('?')
+      )
+      .map(line => line.trim())
+
+    return {data: {commands: commands}}
   }
 
   async handleKataGoScore(params, gameContext) {
