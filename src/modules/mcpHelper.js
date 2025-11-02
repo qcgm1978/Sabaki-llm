@@ -67,6 +67,14 @@ class MCPHelper {
     this.mcpEndpoints.push(endpoint)
   }
 
+  vertexToGTP(vertex) {
+    if (!vertex || vertex[0] < 0 || vertex[1] < 0) return 'pass'
+    const alpha = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'
+    let x = alpha[vertex[0]]
+    let y = 19 - vertex[1]
+    return x + y
+  }
+
   /**
    * 处理KataGo分析请求
    * @param {Object} params - 请求参数
@@ -74,89 +82,61 @@ class MCPHelper {
    * @returns {Promise<Object>} 分析结果
    */
   async handleKataGoAnalysis(params, gameContext) {
-    try {
-      // 尝试复用已连接的引擎实例
-      let syncer = null
-      if (
-        sabaki &&
-        sabaki.state &&
-        sabaki.state.attachedEngineSyncers &&
-        sabaki.state.attachedEngineSyncers.length > 0
-      ) {
-        // 使用第一个已连接的引擎
-        syncer = sabaki.state.attachedEngineSyncers[0]
-      } else {
-        // 获取当前引擎，优先使用gtp.engine，如果不存在则尝试从engines.list获取第一个引擎
-        let engine = setting.get('gtp.engine')
+    let syncer = null
+    if (
+      sabaki &&
+      sabaki.state &&
+      sabaki.state.attachedEngineSyncers &&
+      sabaki.state.attachedEngineSyncers.length > 0
+    ) {
+      syncer = sabaki.state.attachedEngineSyncers[0]
+    } else {
+      let engine = setting.get('gtp.engine')
 
-        // 如果gtp.engine不存在或无效，尝试从engines.list获取
-        if (!engine || !engine.path) {
-          let enginesList = setting.get('engines.list') || []
-          if (enginesList.length > 0) {
-            engine = enginesList[0]
-          }
+      if (!engine || !engine.path) {
+        let enginesList = setting.get('engines.list') || []
+        if (enginesList.length > 0) {
+          engine = enginesList[0]
         }
-
-        if (!engine || !engine.path) {
-          return {error: '未配置KataGo引擎'}
-        }
-
-        // 创建引擎同步器
-        syncer = new engineSyncer(engine)
-
-        // 启动引擎
-        syncer.start()
       }
 
-      // 同步当前棋局状态
-      await syncer.sync(
-        gameContext.gameTrees[gameContext.gameIndex],
-        gameContext.treePosition
-      )
-
-      let visits = params.visits || 50
-      let analyzeCommand = {
-        name: 'lz-analyze',
-        args: [visits.toString()]
+      if (!engine || !engine.path) {
+        return {error: '未配置KataGo引擎'}
       }
 
-      // 等待分析结果
-      return new Promise(resolve => {
-        syncer.on('analysis-update', () => {
-          if (syncer.analysis) {
-            // 格式化分析结果
-            let result = {
-              winrate: syncer.analysis.winrate,
-              bestMove: syncer.analysis.variations[0]?.vertex,
-              variations: syncer.analysis.variations
-                .slice(0, params.lookahead)
-                .map(v => ({
-                  vertex: v.vertex,
-                  winrate: v.winrate,
-                  visits: v.visits,
-                  scoreLead: v.scoreLead
-                }))
-            }
+      syncer = new engineSyncer(engine)
+      syncer.start()
+    }
 
-            // 只在不是已连接引擎的情况下停止引擎
-            if (
-              !sabaki ||
-              !sabaki.state ||
-              !sabaki.state.attachedEngineSyncers ||
-              !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
-            ) {
-              syncer.stop()
-            }
-            resolve({data: result})
+    await syncer.sync(
+      gameContext.gameTrees[gameContext.gameIndex],
+      gameContext.treePosition
+    )
+
+    let visits = params.visits || 50
+    let analyzeCommand = {
+      name: 'lz-analyze',
+      args: [visits.toString()]
+    }
+
+    return new Promise(resolve => {
+      syncer.on('analysis-update', () => {
+        if (syncer.analysis) {
+          let result = {
+            winrate: syncer.analysis.winrate,
+            bestMove: syncer.analysis.variations[0]?.vertex
+              ? this.vertexToGTP(syncer.analysis.variations[0].vertex)
+              : null,
+            variations: syncer.analysis.variations
+              .slice(0, params.lookahead)
+              .map(v => ({
+                vertex: this.vertexToGTP(v.vertex),
+                winrate: v.winrate,
+                visits: v.visits,
+                scoreLead: v.scoreLead
+              }))
           }
-        })
 
-        // 发送命令
-        syncer.queueCommand(analyzeCommand)
-
-        // 超时处理
-        setTimeout(() => {
-          // 只在不是已连接引擎的情况下停止引擎
           if (
             !sabaki ||
             !sabaki.state ||
@@ -165,12 +145,24 @@ class MCPHelper {
           ) {
             syncer.stop()
           }
-          resolve({error: '分析超时'})
-        }, 10000)
+          resolve({data: result})
+        }
       })
-    } catch (err) {
-      return {error: err.message}
-    }
+
+      syncer.queueCommand(analyzeCommand)
+
+      setTimeout(() => {
+        if (
+          !sabaki ||
+          !sabaki.state ||
+          !sabaki.state.attachedEngineSyncers ||
+          !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
+        ) {
+          syncer.stop()
+        }
+        resolve({error: '分析超时'})
+      }, 10000)
+    })
   }
 
   /**
