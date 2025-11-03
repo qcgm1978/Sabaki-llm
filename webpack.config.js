@@ -16,13 +16,15 @@ module.exports = (env, argv) => ({
     __dirname: false,
     __filename: false
   },
-
   resolve: {
     alias: {
       react: 'preact/compat',
       'react-dom': 'preact/compat',
       'react-dom/test-utils': 'preact/test-utils',
       'react/jsx-runtime': 'preact/jsx-runtime'
+    },
+    fallback: {
+      crypto: require.resolve('crypto-browserify')
     },
     extensions: ['.js', '.jsx', '.css']
   },
@@ -40,6 +42,7 @@ module.exports = (env, argv) => ({
     '@sabaki/i18n': 'require("@sabaki/i18n")',
     'cross-spawn': 'null',
     'iconv-lite': 'require("iconv-lite")',
-    moment: 'null'
+    moment: 'null',
+    'node:crypto': 'crypto'
   }
 })

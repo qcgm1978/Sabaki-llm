@@ -54,7 +54,14 @@ export default class AIChatDrawer extends Component {
     })
 
     try {
-      let response = await sabaki.sendDeepSeekMessage(message)
+      // 传递当前游戏上下文
+      const gameContext = {
+        gameTrees: sabaki.state.gameTrees,
+        gameIndex: sabaki.state.gameIndex,
+        treePosition: sabaki.state.treePosition
+      }
+      
+      let response = await sabaki.sendLLMMessage(message, gameContext)
       // 移除等待消息并添加响应
       const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
       if (response.error) {
@@ -69,7 +76,7 @@ export default class AIChatDrawer extends Component {
         this.setState({
           messages: [
             ...updatedMessages,
-            {role: 'ai', content: response.content}
+            {role: 'ai', content: response.content || response}
           ],
           sending: false
         })
@@ -181,8 +188,15 @@ export default class AIChatDrawer extends Component {
     }))
 
     try {
+      // 传递当前游戏上下文
+      const gameContext = {
+        gameTrees: sabaki.state.gameTrees,
+        gameIndex: sabaki.state.gameIndex,
+        treePosition: sabaki.state.treePosition
+      }
+      
       // 调用MCP工具
-      let response = await sabaki.aiManager.sendDeepSeekMessage({
+      let response = await sabaki.aiManager.sendLLMMessage({
         mcp: {
           tool: {
             name: this.state.activeTool.name,
@@ -190,7 +204,7 @@ export default class AIChatDrawer extends Component {
             parameters: this.state.toolParams
           }
         }
-      })
+      }, gameContext)
 
       this.setState(prevState => ({
         messages: [

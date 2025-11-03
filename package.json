@@ -84,7 +84,7 @@
     "proseWrap": "always"
   },
   "dependencies": {
-    "@electron/remote": "^1.2.0",
+    "@electron/remote": "^1.2.2",
     "@mariotacke/color-thief": "^3.0.1",
     "@primer/octicons": "^9.6.0",
     "@sabaki/boardmatcher": "^1.2.0",
@@ -102,6 +102,7 @@
     "fix-path": "<4.0.0",
     "iconv-lite": "^0.5.1",
     "jschardet": "^3.0.0",
+    "llm-service-provider": "^3.8.3",
     "natsort": "^2.0.2",
     "pikaday": "^1.8.0",
     "preact": "^10.4.0",
@@ -113,6 +114,7 @@
   },
   "devDependencies": {
     "concurrently": "^7.3.0",
+    "crypto-browserify": "^3.12.1",
     "css-loader": "^7.1.2",
     "electron": "<14.0.0",
     "electron-builder": "^23.3.3",
@@ -147,6 +149,8 @@
     "dist:win32-portable": "npm run bundle && electron-builder -w portable --ia32 && node ./ci/mv.js ./dist/sabaki-vx.x.x-win.exe ./dist/sabaki-vx.x.x-win-ia32-portable.exe",
     "dist:win64-portable": "npm run bundle && electron-builder -w portable --x64 && node ./ci/mv.js ./dist/sabaki-vx.x.x-win.exe ./dist/sabaki-vx.x.x-win-x64-portable.exe",
     "dist:win": "npm run dist:win32 && npm run dist:win64 && npm run dist:win32-portable && npm run dist:win64-portable",
-    "i18n": "node ./ci/createI18n.js"
+    "i18n": "node ./ci/createI18n.js",
+    "sync": "cnpm sync llm-service-provider",
+    "update": "sudo  chmod -R 777 ./ && cnpm update llm-service-provider"
   }
 }

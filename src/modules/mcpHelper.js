@@ -628,7 +628,10 @@ class MCPHelper {
       return {error: `未找到工具: ${toolName}`}
     }
 
-    return await endpoint.handler(mcpRequest.mcp.tool.parameters, gameContext)
+    return await endpoint.handler(
+      mcpRequest.mcp.tool.parameters || {},
+      gameContext
+    )
   }
 
   /**

@@ -3034,8 +3034,14 @@ class Sabaki extends EventEmitter {
     return this.aiManager.openAIActionMenu({x, y})
   }
 
+  async sendLLMMessage(message) {
+    return await this.aiManager.sendLLMMessage(message)
+  }
+  
+  // 保留向后兼容接口
   async sendDeepSeekMessage(message) {
-    return await this.aiManager.sendDeepSeekMessage(message)
+    console.warn('sendDeepSeekMessage is deprecated. Use sendLLMMessage instead.')
+    return await this.aiManager.sendLLMMessage(message)
   }
 }
 
