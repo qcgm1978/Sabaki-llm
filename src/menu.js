@@ -495,15 +495,14 @@ exports.get = function(props = {}) {
             }
           }
         },
-        {
-          label: !engineGameOngoing
-            ? i18n.t('menu.engines', 'Start Engine vs. Engine &Game')
-            : i18n.t('menu.engines', 'Stop Engine vs. Engine &Game'),
-          accelerator: 'F5',
-          click: () => {
-            sabaki.startStopEngineGame(sabaki.state.treePosition)
-          }
-        },
+        // {\n          // label: !engineGameOngoing
+        //   ? i18n.t('menu.engines', 'Start Engine vs. Engine &Game')
+        //   : i18n.t('menu.engines', 'Stop Engine vs. Engine &Game'),
+        // accelerator: 'F5',
+        // click: () => {
+        //   sabaki.startStopEngineGame(sabaki.state.treePosition)
+        // }
+        // },
         {
           label: i18n.t('menu.engines', 'Generate &Move'),
           accelerator: 'F10',
