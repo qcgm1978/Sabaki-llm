@@ -20,3 +20,5 @@ src/modules/ui.js
 src/modules/viewManager.js
 
 my.txt
+
+.DS_Store

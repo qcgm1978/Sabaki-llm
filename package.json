@@ -84,7 +84,7 @@
     "proseWrap": "always"
   },
   "dependencies": {
-    "@electron/remote": "^1.2.2",
+    "@electron/remote": "^2.1.3",
     "@mariotacke/color-thief": "^3.0.1",
     "@primer/octicons": "^9.6.0",
     "@sabaki/boardmatcher": "^1.2.0",
@@ -105,7 +105,7 @@
     "llm-service-provider": "^3.8.3",
     "natsort": "^2.0.2",
     "pikaday": "^1.8.0",
-    "preact": "^10.4.0",
+    "preact": "^10.27.2",
     "react-markdown": "^8.0.3",
     "remark-breaks": "^3.0.2",
     "rimraf": "^3.0.2",
@@ -122,7 +122,6 @@
     "mocha": "<9.0",
     "onchange": "^6.1.0",
     "preact": "^10.27.2",
-    "preact-compat": "^3.19.0",
     "prettier": "1.19.1",
     "style-loader": "^4.0.0",
     "tmp": "^0.2.1",
