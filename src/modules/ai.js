@@ -59,6 +59,7 @@ class AIHelper {
       let result = ''
       const prompt =
         '你是一个围棋助手，能够分析棋局、提供建议并回答关于围棋策略的问题。请注意，你必须返回json格式的响应，不要在JSON前后添加任何其他文本（如```json等标记）。\n' +
+        '你的回答必须包含response属性，这是需要渲染的主要内容。例如:{"response":"你的回答内容"}\n' +
         '你可以使用以下MCP工具来增强你的分析能力:\n' +
         toolsInfo +
         '\n' +
@@ -109,6 +110,11 @@ class AIHelper {
           toolResult.data,
           gameContext
         )
+      } else if (parsedResponse.response) {
+        // 如果响应包含response属性，使用该属性的值
+        return {
+          content: parsedResponse.response.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
+        }
       }
 
       // 移除Markdown格式并返回内容
