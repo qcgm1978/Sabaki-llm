@@ -891,7 +891,7 @@ class Sabaki extends EventEmitter {
   }
 
   clickVertex(vertex, {button = 0, ctrlKey = false, x = 0, y = 0} = {}) {
-    this.closeDrawer()
+    // 不在这里关闭抽屉，而是在需要的地方单独关闭
 
     let t = i18n.context('sabaki.play')
     let {gameTrees, gameIndex, gameCurrents, treePosition} = this.state
@@ -917,6 +917,7 @@ class Sabaki extends EventEmitter {
             return
           }
         } else {
+          this.closeDrawer() // 在进行实际移动时关闭抽屉
           this.makeMove(vertex, {
             generateEngineMove: this.state.engineGameOngoing == null
           })
@@ -929,6 +930,7 @@ class Sabaki extends EventEmitter {
           this.removeNode(treePosition)
         }
       } else if (button === 2) {
+        this.closeDrawer() // 在右键菜单操作前关闭抽屉
         if (
           board.markers[vy][vx] != null &&
           board.markers[vy][vx].type === 'point'
@@ -981,6 +983,7 @@ class Sabaki extends EventEmitter {
         }
       }
     } else if (this.state.mode === 'edit') {
+      this.closeDrawer() // 在编辑模式下操作前关闭抽屉
       if (ctrlKey) {
         // Add coordinates to comment
 
@@ -1032,6 +1035,7 @@ class Sabaki extends EventEmitter {
       }
 
       if (['line', 'arrow'].includes(tool)) {
+        this.closeDrawer() // 使用线条工具时关闭抽屉
         // Remember clicked vertex and pass as an argument the second time
 
         if (!this.editVertexData || this.editVertexData[0] !== tool) {
@@ -1042,10 +1046,12 @@ class Sabaki extends EventEmitter {
           this.editVertexData = null
         }
       } else {
+        this.closeDrawer() // 使用其他工具时关闭抽屉
         this.useTool(tool, vertex)
         this.editVertexData = null
       }
     } else if (['scoring', 'estimator'].includes(this.state.mode)) {
+      this.closeDrawer() // 在计分模式下操作前关闭抽屉
       if (button !== 0 || board.get(vertex) === 0) return
 
       let {mode, deadStones} = this.state
@@ -1065,6 +1071,7 @@ class Sabaki extends EventEmitter {
 
       this.setState({deadStones})
     } else if (this.state.mode === 'find') {
+      this.closeDrawer() // 在查找模式下操作前关闭抽屉
       if (button !== 0) return
 
       if (helper.vertexEquals(this.state.findVertex || [-1, -1], vertex)) {
@@ -1074,6 +1081,7 @@ class Sabaki extends EventEmitter {
         this.findMove(1, {vertex, text: this.state.findText})
       }
     } else if (this.state.mode === 'guess') {
+      this.closeDrawer() // 在猜测模式下操作前关闭抽屉
       if (button !== 0) return
 
       let nextNode = tree.navigate(treePosition, 1, gameCurrents[gameIndex])
@@ -3037,10 +3045,12 @@ class Sabaki extends EventEmitter {
   async sendLLMMessage(message) {
     return await this.aiManager.sendLLMMessage(message)
   }
-  
+
   // 保留向后兼容接口
   async sendDeepSeekMessage(message) {
-    console.warn('sendDeepSeekMessage is deprecated. Use sendLLMMessage instead.')
+    console.warn(
+      'sendDeepSeekMessage is deprecated. Use sendLLMMessage instead.'
+    )
     return await this.aiManager.sendLLMMessage(message)
   }
 }

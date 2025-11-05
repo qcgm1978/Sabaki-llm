@@ -135,6 +135,7 @@ export default class DrawerManager extends Component {
       }),
 
       h(AIChatDrawer, {
+        ...this.props,
         show: openDrawer === 'ai-chat'
       })
     )

@@ -3,10 +3,11 @@ import sabaki from '../../modules/sabaki.js'
 import i18n from '../../i18n.js'
 import TextSpinner from '../TextSpinner.js'
 import mcpHelper from '../../modules/mcpHelper.js'
+import Drawer from './Drawer.js'
 
 const t = i18n.context('AIChatDrawer')
 
-export default class AIChatDrawer extends Component {
+export default class AIChatDrawer extends Drawer {
   constructor(props) {
     super(props)
     this.scrollToBottom = true
@@ -60,7 +61,7 @@ export default class AIChatDrawer extends Component {
         gameIndex: sabaki.state.gameIndex,
         treePosition: sabaki.state.treePosition
       }
-      
+
       let response = await sabaki.sendLLMMessage(message, gameContext)
       // 移除等待消息并添加响应
       const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
@@ -194,17 +195,20 @@ export default class AIChatDrawer extends Component {
         gameIndex: sabaki.state.gameIndex,
         treePosition: sabaki.state.treePosition
       }
-      
+
       // 调用MCP工具
-      let response = await sabaki.aiManager.sendLLMMessage({
-        mcp: {
-          tool: {
-            name: this.state.activeTool.name,
-            description: this.state.activeTool.description,
-            parameters: this.state.toolParams
+      let response = await sabaki.aiManager.sendLLMMessage(
+        {
+          mcp: {
+            tool: {
+              name: this.state.activeTool.name,
+              description: this.state.activeTool.description,
+              parameters: this.state.toolParams
+            }
           }
-        }
-      }, gameContext)
+        },
+        gameContext
+      )
 
       this.setState(prevState => ({
         messages: [
@@ -375,8 +379,8 @@ export default class AIChatDrawer extends Component {
     if (!this.props.show) return null
 
     return h(
-      'div',
-      {class: 'ai-chat-drawer gtp-console'},
+      'section',
+      {id: 'ai-chat', class: 'ai-chat-drawer gtp-console'},
       h(
         'div',
         {class: 'drawer-header'},
