@@ -6,7 +6,7 @@ import {
   getSelectedServiceProvider,
   hasApiKey
 } from 'llm-service-provider'
-const sabaki = require('./sabaki.js')
+import sabaki from './sabaki.js'
 
 /**
  * AI助手模块，处理与DeepSeek API的交互并集成MCP协议支持
@@ -82,30 +82,27 @@ class AIHelper {
       result += chunk
     }
 
-    // 如果是json_object格式，需要从content中解析出实际内容
-    if (
-      typeof result === 'string' &&
-      result.startsWith('{') &&
-      result.endsWith('}')
-    ) {
-      try {
-        let parsed = JSON.parse(result)
-        if (parsed.content) result = parsed.content
-      } catch (e) {
-        // 如果解析失败，保持原内容不变
-      }
-    }
+    // // 如果是json_object格式，需要从content中解析出实际内容
+    // if (
+    //   typeof result === 'string' &&
+    //   result.startsWith('{') &&
+    //   result.endsWith('}')
+    // ) {
+    //   try {
+    //     let parsed = JSON.parse(result)
+    //     if (parsed.content) result = parsed.content
+    //   } catch (e) {
+    //     // 如果解析失败，保持原内容不变
+    //   }
+    // }
 
     // 检查响应是否包含MCP工具调用
     let parsedResponse = JSON.parse(result.replace(/```json|```/g, ''))
     if (parsedResponse.mcp && parsedResponse.mcp.tool) {
-      // 在处理工具调用前，先渲染LLM回复内容（如果有）
-      if (parsedResponse.response) {
-        let content = `${provider}: ${parsedResponse.mcp.tool.description}`
+      let content = `${provider}: ${parsedResponse.mcp.tool.description}`
 
-        if (sabaki.aiManager && sabaki.aiManager.addAIMessage) {
-          sabaki.aiManager.addAIMessage(content)
-        }
+      if (sabaki.aiManager && sabaki.aiManager.addAIMessage) {
+        sabaki.aiManager.addAIMessage(content)
       }
 
       // 处理MCP工具调用
@@ -138,16 +135,6 @@ class AIHelper {
         '$1'
       )
     }
-    // } catch (err) {
-    //   let errorMessage = err.message || 'API Error'
-    //   // 特别处理服务忙的情况
-    //   if (errorMessage.includes('Service is too busy')) {
-    //     return {
-    //       error: 'LLM服务当前繁忙，请稍后再试或考虑使用其他LLM API服务提供商。'
-    //     }
-    //   }
-    //   return {error: errorMessage}
-    // }
   }
 
   /**

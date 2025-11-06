@@ -68,10 +68,7 @@ function newWindow(path) {
 
   // Handle close event to allow for save confirmation
   window.on('close', evt => {
-    // Don't proceed with close immediately
     evt.preventDefault()
-
-    // Ask renderer process if we can close
     window.webContents.send('can-close-window')
   })
 

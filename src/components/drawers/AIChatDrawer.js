@@ -11,6 +11,10 @@ export default class AIChatDrawer extends Drawer {
   constructor(props) {
     super(props)
     this.scrollToBottom = true
+    // 从localStorage加载历史记录
+    const savedHistory = JSON.parse(
+      localStorage.getItem('sabaki-llm-history') || '[]'
+    )
     this.state = {
       messages: [],
       input: '',
@@ -18,7 +22,7 @@ export default class AIChatDrawer extends Drawer {
       showMCPTools: false,
       activeTool: null,
       toolParams: {},
-      history: [],
+      history: savedHistory,
       currentHistoryIndex: -1,
       tempInput: ''
     }
@@ -31,6 +35,31 @@ export default class AIChatDrawer extends Drawer {
   componentWillUnmount() {
     // 移除事件监听
     sabaki.off('ai.message.add', this.handleAIMessageAdd)
+    // 保存历史记录
+    localStorage.setItem(
+      'sabaki-llm-history',
+      JSON.stringify(this.state.history)
+    )
+  }
+
+  // 组件更新时保存历史记录
+  componentDidUpdate(prevProps, prevState) {
+    // 当历史记录变化时保存
+    if (prevState.history !== this.state.history) {
+      localStorage.setItem(
+        'sabaki-llm-history',
+        JSON.stringify(this.state.history)
+      )
+    }
+
+    // 处理滚动到底部
+    if (this.messagesContainer && this.scrollToBottom) {
+      setTimeout(() => {
+        if (this.messagesContainer) {
+          this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight
+        }
+      }, 0)
+    }
   }
 
   handleAIMessageAdd = message => {
@@ -149,15 +178,7 @@ export default class AIChatDrawer extends Drawer {
     this.setState({messages: []})
   }
 
-  componentDidUpdate() {
-    if (this.messagesContainer && this.scrollToBottom) {
-      setTimeout(() => {
-        if (this.messagesContainer) {
-          this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight
-        }
-      }, 0)
-    }
-  }
+  // 滚动逻辑已合并到上面的componentDidUpdate方法中
 
   toggleMCPTools = () => {
     this.setState(prevState => ({
