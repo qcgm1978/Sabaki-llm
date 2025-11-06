@@ -1,5 +1,9 @@
 # ![Sabaki AI: 集成LLM和KataGo的智能围棋助手](./banner-llm.png)
 
+---
+
+[英文版本 (English Version)](README_EN.md)
+
 [![下载最新版本](https://img.shields.io/github/downloads/SabakiHQ/Sabaki/latest/total?label=下载)](https://github.com/SabakiHQ/Sabaki/releases)
 [![CI](https://github.com/SabakiHQ/Sabaki/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/SabakiHQ/Sabaki/actions)
 
@@ -45,7 +49,3 @@
 ## 许可证
 
 本项目基于 Sabaki（MIT 许可证）开发。
-
----
-
-[英文版本 (English Version)](README_EN.md)

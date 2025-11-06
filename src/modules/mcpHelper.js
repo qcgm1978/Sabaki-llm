@@ -266,11 +266,36 @@ class MCPHelper {
 
     // 为每个GTP命令注册MCP端点
     gtpCommands.forEach(cmd => {
-      this.registerEndpoint({
-        id: `gtp-${cmd.id}`,
-        name: `GTP: ${cmd.name}`,
-        description: cmd.description,
-        parameters: {
+      // 定义不需要参数的命令列表
+      const noParamsCommands = [
+        'protocol_version',
+        'name',
+        'version',
+        'list_commands',
+        'quit',
+        'clear_board',
+        'get_komi',
+        'undo',
+        'kata-get-rules',
+        'kata-get-models',
+        'kata-list-params',
+        'showboard',
+        'final_score',
+        'final_status_list',
+        'printsgf',
+        'cputime',
+        'gomill-cpu_time',
+        'kata-debug-print-tc',
+        'debug_moves',
+        'stop'
+      ]
+
+      // 对于不需要参数的命令，不设置parameters属性
+      let parameters = null
+
+      // 为需要参数的命令设置默认参数列表
+      if (!noParamsCommands.includes(cmd.id)) {
+        parameters = {
           type: 'object',
           properties: {
             args: {
@@ -282,11 +307,610 @@ class MCPHelper {
               default: []
             }
           }
-        },
-        handler: async (params, gameContext) => {
-          return await this.handleGTPCommand(cmd.name, params.args, gameContext)
         }
-      })
+      }
+
+      // 为需要特定参数的命令提供详细的参数说明
+      if (cmd.id === 'genmove') {
+        parameters = {
+          type: 'object',
+          required: ['color'],
+          properties: {
+            color: {
+              type: 'string',
+              description: '要生成的棋子颜色，必须是B(黑)或W(白)',
+              enum: ['B', 'W']
+            }
+          }
+        }
+      } else if (cmd.id === 'play') {
+        parameters = {
+          type: 'object',
+          required: ['color', 'vertex'],
+          properties: {
+            color: {
+              type: 'string',
+              description: '落子颜色，必须是B(黑)或W(白)',
+              enum: ['B', 'W']
+            },
+            vertex: {
+              type: 'string',
+              description: '落子位置，如A1、T19或pass'
+            }
+          }
+        }
+      } else if (cmd.id === 'boardsize') {
+        parameters = {
+          type: 'object',
+          required: ['size'],
+          properties: {
+            size: {
+              type: 'integer',
+              description: '棋盘大小，如9、13、19等',
+              minimum: 1
+            }
+          }
+        }
+      } else if (cmd.id === 'rectangular_boardsize') {
+        parameters = {
+          type: 'object',
+          required: ['width', 'height'],
+          properties: {
+            width: {
+              type: 'integer',
+              description: '棋盘宽度',
+              minimum: 1
+            },
+            height: {
+              type: 'integer',
+              description: '棋盘高度',
+              minimum: 1
+            }
+          }
+        }
+      } else if (cmd.id === 'komi') {
+        parameters = {
+          type: 'object',
+          required: ['value'],
+          properties: {
+            value: {
+              type: 'number',
+              description: '贴目值'
+            }
+          }
+        }
+      } else if (cmd.id === 'known_command') {
+        parameters = {
+          type: 'object',
+          required: ['command'],
+          properties: {
+            command: {
+              type: 'string',
+              description: '要检查的命令名称'
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-set-rules') {
+        parameters = {
+          type: 'object',
+          required: ['rules'],
+          properties: {
+            rules: {
+              type: 'string',
+              description:
+                '规则设置，可以是JSON字典或规则简写（如tromp-taylor、chinese-kgs、aga等）'
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-analyze') {
+        parameters = {
+          type: 'object',
+          properties: {
+            player: {
+              type: 'string',
+              description: '指定分析方，B或W',
+              enum: ['B', 'W']
+            },
+            interval: {
+              type: 'integer',
+              description: '分析间隔'
+            },
+            rootInfo: {
+              type: 'boolean',
+              description: '是否包含根节点信息'
+            },
+            ownership: {
+              type: 'boolean',
+              description: '是否包含所有权信息'
+            },
+            pvVisits: {
+              type: 'boolean',
+              description: '是否包含变例访问信息'
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-raw-nn' || cmd.id === 'kata-raw-human-nn') {
+        parameters = {
+          type: 'object',
+          required: ['symmetry'],
+          properties: {
+            symmetry: {
+              type: ['integer', 'string'],
+              description: '对称性参数，0-7的整数或all',
+              enum: [0, 1, 2, 3, 4, 5, 6, 7, 'all']
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-benchmark') {
+        parameters = {
+          type: 'object',
+          required: ['nVisits'],
+          properties: {
+            nVisits: {
+              type: 'integer',
+              description: '基准测试的访问次数'
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-get-param') {
+        parameters = {
+          type: 'object',
+          required: ['param'],
+          properties: {
+            param: {
+              type: 'string',
+              description: '要获取的参数名称'
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-set-param') {
+        parameters = {
+          type: 'object',
+          required: ['param', 'value'],
+          properties: {
+            param: {
+              type: 'string',
+              description: '要设置的参数名称'
+            },
+            value: {
+              type: ['string', 'number', 'boolean'],
+              description: '要设置的参数值'
+            }
+          }
+        }
+      } else if (cmd.id === 'set_position') {
+        parameters = {
+          type: 'object',
+          properties: {
+            moves: {
+              type: 'array',
+              description:
+                '着法列表，格式为[颜色,位置,颜色,位置,...]，如["B","A1","W","B1"]',
+              items: {
+                type: 'string'
+              },
+              default: []
+            }
+          }
+        }
+      } else if (cmd.id === 'kgs-rules') {
+        parameters = {
+          type: 'object',
+          required: ['rules'],
+          properties: {
+            rules: {
+              type: 'string',
+              description: 'KGS规则设置，如chinese、japanese、aga等'
+            }
+          }
+        }
+      } else if (cmd.id === 'time_settings') {
+        parameters = {
+          type: 'object',
+          required: ['mainTime', 'byoYomiTime', 'byoYomiStones'],
+          properties: {
+            mainTime: {
+              type: 'integer',
+              description: '主时间（秒）'
+            },
+            byoYomiTime: {
+              type: 'integer',
+              description: '读秒时间（秒）'
+            },
+            byoYomiStones: {
+              type: 'integer',
+              description: '读秒次数'
+            }
+          }
+        }
+      } else if (cmd.id === 'kgs-time_settings') {
+        parameters = {
+          type: 'object',
+          required: ['mainTime', 'byoYomiTime', 'byoYomiPeriods'],
+          properties: {
+            mainTime: {
+              type: 'integer',
+              description: '主时间（秒）'
+            },
+            byoYomiTime: {
+              type: 'integer',
+              description: '每读秒周期时间（秒）'
+            },
+            byoYomiPeriods: {
+              type: 'integer',
+              description: '读秒周期数'
+            }
+          }
+        }
+      } else if (cmd.id === 'time_left') {
+        parameters = {
+          type: 'object',
+          required: ['color', 'time', 'stones'],
+          properties: {
+            color: {
+              type: 'string',
+              description: '颜色，B或W',
+              enum: ['B', 'W']
+            },
+            time: {
+              type: 'integer',
+              description: '剩余时间（秒）'
+            },
+            stones: {
+              type: 'integer',
+              description: '剩余读秒次数'
+            }
+          }
+        }
+      } else if (cmd.id === 'fixed_handicap') {
+        parameters = {
+          type: 'object',
+          required: ['n'],
+          properties: {
+            n: {
+              type: 'integer',
+              description: '让子数量（2-9）',
+              minimum: 2,
+              maximum: 9
+            }
+          }
+        }
+      } else if (cmd.id === 'place_free_handicap') {
+        parameters = {
+          type: 'object',
+          required: ['n'],
+          properties: {
+            n: {
+              type: 'integer',
+              description: '让子数量（2-9）',
+              minimum: 2,
+              maximum: 9
+            }
+          }
+        }
+      } else if (cmd.id === 'set_free_handicap') {
+        parameters = {
+          type: 'object',
+          required: ['vertices'],
+          properties: {
+            vertices: {
+              type: 'array',
+              description: '让子位置列表，如["A1", "T19"]',
+              items: {
+                type: 'string'
+              }
+            }
+          }
+        }
+      } else if (
+        cmd.id === 'lz-genmove_analyze' ||
+        cmd.id === 'kata-genmove_analyze'
+      ) {
+        parameters = {
+          type: 'object',
+          required: ['color'],
+          properties: {
+            color: {
+              type: 'string',
+              description: '要生成的棋子颜色，必须是B(黑)或W(白)',
+              enum: ['B', 'W']
+            },
+            visits: {
+              type: 'integer',
+              description: '分析访问量'
+            }
+          }
+        }
+      } else if (cmd.id === 'lz-analyze') {
+        parameters = {
+          type: 'object',
+          properties: {
+            visits: {
+              type: 'integer',
+              description: '分析访问量'
+            }
+          }
+        }
+      } else if (cmd.id === 'loadsgf') {
+        parameters = {
+          type: 'object',
+          required: ['sgf'],
+          properties: {
+            sgf: {
+              type: 'string',
+              description: 'SGF格式的棋谱内容'
+            }
+          }
+        }
+      } else if (cmd.id === 'clear_cache') {
+        parameters = {
+          type: 'object',
+          properties: {
+            type: {
+              type: 'string',
+              description: '缓存类型（可选）'
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-set-rule') {
+        parameters = {
+          type: 'object',
+          required: ['rule', 'value'],
+          properties: {
+            rule: {
+              type: 'string',
+              description: '规则名称'
+            },
+            value: {
+              type: ['string', 'number', 'boolean'],
+              description: '规则值'
+            }
+          }
+        }
+      } else if (
+        cmd.id === 'kata-search' ||
+        cmd.id === 'kata-search_cancellable' ||
+        cmd.id === 'kata-search_analyze' ||
+        cmd.id === 'kata-search_analyze_cancellable' ||
+        cmd.id === 'kata-search_debug'
+      ) {
+        parameters = {
+          type: 'object',
+          properties: {
+            player: {
+              type: 'string',
+              description: '搜索方，B或W',
+              enum: ['B', 'W']
+            },
+            visits: {
+              type: 'integer',
+              description: '搜索访问量'
+            }
+          }
+        }
+      } else if (cmd.id === 'genmove_debug') {
+        parameters = {
+          type: 'object',
+          required: ['color'],
+          properties: {
+            color: {
+              type: 'string',
+              description: '要生成的棋子颜色，必须是B(黑)或W(白)',
+              enum: ['B', 'W']
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-time_settings') {
+        parameters = {
+          type: 'object',
+          required: ['mainTime', 'byoYomiTime', 'byoYomiStones'],
+          properties: {
+            mainTime: {
+              type: 'integer',
+              description: '主时间（秒）'
+            },
+            byoYomiTime: {
+              type: 'integer',
+              description: '读秒时间（秒）'
+            },
+            byoYomiStones: {
+              type: 'integer',
+              description: '读秒次数'
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-list_time_settings') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'kata-list-params') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'kata-get-models') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'kata-get-rules') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'final_score') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'final_status_list') {
+        parameters = {
+          type: 'object',
+          required: ['status'],
+          properties: {
+            status: {
+              type: 'string',
+              description: '要查询的状态类型（如dead、alive等）'
+            }
+          }
+        }
+      } else if (cmd.id === 'cputime' || cmd.id === 'gomill-cpu_time') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'debug_moves') {
+        parameters = {
+          type: 'object',
+          properties: {
+            n: {
+              type: 'integer',
+              description: '调试的步数'
+            }
+          }
+        }
+      } else if (cmd.id === 'stop') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'showboard') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'printsgf') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'kata-debug-print-tc') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'undo') {
+        parameters = {
+          type: 'object',
+          properties: {
+            n: {
+              type: 'integer',
+              description: '撤销的步数，默认为1'
+            }
+          }
+        }
+      } else if (cmd.id === 'clear_board') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      } else if (cmd.id === 'get_komi') {
+        parameters = {
+          type: 'object',
+          properties: {}
+        }
+      }
+
+      // 注册MCP端点，只有当parameters不为null时才包含该属性
+      const endpoint = {
+        id: `gtp-${cmd.id}`,
+        name: `GTP: ${cmd.name}`,
+        description: cmd.description
+      }
+
+      if (parameters) {
+        endpoint.parameters = parameters
+      }
+
+      endpoint.handler = async (params, gameContext) => {
+        // 根据不同命令类型构建args数组
+        let commandArgs = params.args || []
+
+        // 为新增的命令添加参数处理逻辑
+        if (cmd.id === 'final_status_list' && params.status) {
+          commandArgs = [params.status]
+        } else if (cmd.id === 'debug_moves' && params.n !== undefined) {
+          commandArgs = [params.n.toString()]
+        } else if (cmd.id === 'undo' && params.n !== undefined) {
+          commandArgs = [params.n.toString()]
+        } else if (
+          cmd.id === 'kata-search_analyze' ||
+          cmd.id === 'kata-search_analyze_cancellable'
+        ) {
+          if (params.player) commandArgs.push(params.player)
+          if (params.visits !== undefined)
+            commandArgs.push(params.visits.toString())
+        } else if (cmd.id === 'genmove_debug' && params.color) {
+          commandArgs = [params.color]
+        } else if (
+          cmd.id === 'kata-time_settings' &&
+          params.mainTime !== undefined &&
+          params.byoYomiTime !== undefined &&
+          params.byoYomiStones !== undefined
+        ) {
+          commandArgs = [
+            params.mainTime.toString(),
+            params.byoYomiTime.toString(),
+            params.byoYomiStones.toString()
+          ]
+        }
+
+        if (cmd.id === 'genmove' && params.color) {
+          commandArgs = [params.color]
+        } else if (cmd.id === 'play' && params.color && params.vertex) {
+          commandArgs = [params.color, params.vertex]
+        } else if (cmd.id === 'boardsize' && params.size !== undefined) {
+          commandArgs = [params.size.toString()]
+        } else if (
+          cmd.id === 'rectangular_boardsize' &&
+          params.width !== undefined &&
+          params.height !== undefined
+        ) {
+          commandArgs = [params.width.toString(), params.height.toString()]
+        } else if (cmd.id === 'komi' && params.value !== undefined) {
+          commandArgs = [params.value.toString()]
+        } else if (cmd.id === 'known_command' && params.command) {
+          commandArgs = [params.command]
+        } else if (cmd.id === 'kata-set-rules' && params.rules) {
+          commandArgs = [params.rules]
+        } else if (cmd.id === 'kata-analyze') {
+          if (params.player) commandArgs.push(params.player)
+          if (params.interval !== undefined)
+            commandArgs.push(params.interval.toString())
+
+          // 添加各种key-value参数
+          const boolParams = ['rootInfo', 'ownership', 'pvVisits']
+          boolParams.forEach(param => {
+            if (params[param] !== undefined) {
+              commandArgs.push(param + '=' + (params[param] ? 'true' : 'false'))
+            }
+          })
+        } else if (
+          (cmd.id === 'kata-raw-nn' || cmd.id === 'kata-raw-human-nn') &&
+          params.symmetry !== undefined
+        ) {
+          commandArgs = [params.symmetry.toString()]
+        } else if (
+          cmd.id === 'kata-benchmark' &&
+          params.nVisits !== undefined
+        ) {
+          commandArgs = [params.nVisits.toString()]
+        } else if (cmd.id === 'kata-get-param' && params.param) {
+          commandArgs = [params.param]
+        } else if (
+          cmd.id === 'kata-set-param' &&
+          params.param &&
+          params.value !== undefined
+        ) {
+          commandArgs = [params.param, params.value.toString()]
+        }
+
+        return await this.handleGTPCommand(cmd.name, commandArgs, gameContext)
+      }
+
+      // 注册端点
+      this.registerEndpoint(endpoint)
     })
   }
 
@@ -518,6 +1142,94 @@ class MCPHelper {
    * @returns {Promise<Object>} 命令执行结果
    */
   async handleGTPCommand(command, args, gameContext) {
+    // 验证参数
+    if (command === 'genmove' && args.length < 1) {
+      return {command, args, response: '? 缺少颜色参数', success: false}
+    }
+    if (command === 'play' && args.length < 2) {
+      return {command, args, response: '? 缺少颜色或位置参数', success: false}
+    }
+    if (
+      (command === 'boardsize' ||
+        command === 'fixed_handicap' ||
+        command === 'place_free_handicap' ||
+        command === 'komi' ||
+        command === 'known_command' ||
+        command === 'kata-set-rules' ||
+        command === 'kata-raw-nn' ||
+        command === 'kata-benchmark' ||
+        command === 'kata-get-param' ||
+        command === 'kgs-rules') &&
+      args.length < 1
+    ) {
+      return {command, args, response: '? 缺少必要参数', success: false}
+    }
+    if (
+      (command === 'rectangular_boardsize' ||
+        command === 'set_free_handicap' ||
+        command === 'kata-set-param' ||
+        command === 'time_settings' ||
+        command === 'kgs-time_settings' ||
+        command === 'time_left') &&
+      args.length < 2
+    ) {
+      return {command, args, response: '? 缺少必要参数', success: false}
+    }
+    if (command === 'time_settings' && args.length < 3) {
+      return {
+        command,
+        args,
+        response: '? 缺少完整的时间设置参数',
+        success: false
+      }
+    }
+    if (command === 'kgs-time_settings' && args.length < 3) {
+      return {
+        command,
+        args,
+        response: '? 缺少完整的KGS时间设置参数',
+        success: false
+      }
+    }
+    if (
+      command === 'lz-genmove_analyze' ||
+      command === 'kata-genmove_analyze'
+    ) {
+      if (args.length < 1) {
+        return {command, args, response: '? 缺少颜色参数', success: false}
+      }
+      if (!['B', 'W'].includes(args[0].toUpperCase())) {
+        return {command, args, response: '? 颜色参数必须是B或W', success: false}
+      }
+    }
+    if (command === 'loadsgf' && args.length < 1) {
+      return {command, args, response: '? 缺少SGF内容', success: false}
+    }
+    if (command === 'kata-set-rule' && args.length < 2) {
+      return {command, args, response: '? 缺少规则名称或值', success: false}
+    }
+    if (command === 'fixed_handicap' || command === 'place_free_handicap') {
+      if (args.length > 0) {
+        const n = parseInt(args[0])
+        if (isNaN(n) || n < 2 || n > 9) {
+          return {
+            command,
+            args,
+            response: '? 让子数量必须在2-9之间',
+            success: false
+          }
+        }
+      }
+    }
+    if (command === 'play' && args && !['B', 'W'].includes(args[0])) {
+      return {
+        command,
+        args,
+        response: '? play命令的第一个参数必须是B或W',
+        success: false
+      }
+    }
+
     let syncer = null
     let needStop = false
 

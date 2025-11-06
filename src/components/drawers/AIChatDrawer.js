@@ -98,42 +98,40 @@ export default class AIChatDrawer extends Drawer {
       currentHistoryIndex: -1
     })
 
-    try {
-      // 传递当前游戏上下文
-      const gameContext = {
-        gameTrees: sabaki.state.gameTrees,
-        gameIndex: sabaki.state.gameIndex,
-        treePosition: sabaki.state.treePosition
-      }
+    const gameContext = {
+      gameTrees: sabaki.state.gameTrees,
+      gameIndex: sabaki.state.gameIndex,
+      treePosition: sabaki.state.treePosition
+    }
 
-      let response = await sabaki.sendLLMMessage(message, gameContext)
-      // 移除等待消息并添加响应
-      const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
-      if (response.error) {
-        this.setState({
-          messages: [
-            ...updatedMessages,
-            {role: 'error', content: response.error}
-          ],
-          sending: false
-        })
-      } else {
-        this.setState({
-          messages: [
-            ...updatedMessages,
-            {role: 'ai', content: response.content || response}
-          ],
-          sending: false
-        })
-      }
-    } catch (err) {
-      // 移除等待消息并添加错误
-      const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
+    let response = await sabaki.sendLLMMessage(message, gameContext)
+    // 移除等待消息并添加响应
+    const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
+    if (response.error) {
       this.setState({
-        messages: [...updatedMessages, {role: 'error', content: err.message}],
+        messages: [
+          ...updatedMessages,
+          {role: 'error', content: response.error}
+        ],
+        sending: false
+      })
+    } else {
+      this.setState({
+        messages: [
+          ...updatedMessages,
+          {role: 'ai', content: response.content || response}
+        ],
         sending: false
       })
     }
+    // } catch (err) {
+    //   // 移除等待消息并添加错误
+    //   const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
+    //   this.setState({
+    //     messages: [...updatedMessages, {role: 'error', content: err.message}],
+    //     sending: false
+    //   })
+    // }
   }
 
   handleKeyDown = evt => {

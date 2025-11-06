@@ -13,6 +13,41 @@ import sabaki from './sabaki.js'
  */
 class AIHelper {
   /**
+   * 格式化参数要求显示
+   * @param {Object} parameters - 参数对象
+   * @returns {string} 格式化后的参数要求字符串
+   */
+  formatParameters(parameters) {
+    let result = []
+
+    if (parameters.required && parameters.required.length > 0) {
+      result.push(`必填参数: ${parameters.required.join(', ')}`)
+    }
+
+    if (parameters.properties) {
+      let propsInfo = []
+      for (let [name, prop] of Object.entries(parameters.properties)) {
+        let propDesc = `${name} (${prop.type})`
+        if (prop.description) {
+          propDesc += `: ${prop.description}`
+        }
+        if (prop.enum) {
+          propDesc += ` [可选值: ${prop.enum.join(', ')}]`
+        }
+        if (prop.minimum !== undefined) {
+          propDesc += ` [最小: ${prop.minimum}]`
+        }
+        propsInfo.push(propDesc)
+      }
+      if (propsInfo.length > 0) {
+        result.push(`参数详情: ${propsInfo.join('; ')}`)
+      }
+    }
+
+    return result.length > 0 ? result.join(' | ') : '无'
+  }
+
+  /**
    * 向DeepSeek API发送消息，支持MCP协议
    * @param {string} message - 用户消息
    * @param {Object} gameContext - 游戏上下文信息
@@ -40,15 +75,39 @@ class AIHelper {
 
     let boardContext = moves.join('\n')
 
+    // 收集棋局元信息（从根节点获取）
+    let gameInfo = ''
+    let rootNode = tree.root
+    if (rootNode && rootNode.data) {
+      let metaInfo = []
+      if (rootNode.data.GN) metaInfo.push(`赛事: ${rootNode.data.GN}`)
+      if (rootNode.data.PB) metaInfo.push(`黑方: ${rootNode.data.PB}`)
+      if (rootNode.data.PW) metaInfo.push(`白方: ${rootNode.data.PW}`)
+      if (rootNode.data.BR) metaInfo.push(`黑方等级: ${rootNode.data.BR}`)
+      if (rootNode.data.WR) metaInfo.push(`白方等级: ${rootNode.data.WR}`)
+      if (rootNode.data.KM) metaInfo.push(`贴目: ${rootNode.data.KM}`)
+      if (rootNode.data.RU) metaInfo.push(`规则: ${rootNode.data.RU}`)
+      if (rootNode.data.SZ) metaInfo.push(`棋盘大小: ${rootNode.data.SZ}`)
+      if (rootNode.data.HA) metaInfo.push(`让子数: ${rootNode.data.HA}`)
+      if (rootNode.data.RE) metaInfo.push(`结果: ${rootNode.data.RE}`)
+
+      if (metaInfo.length > 0) {
+        gameInfo = '棋局信息:\n' + metaInfo.join('\n') + '\n\n'
+      }
+    }
+
     // 获取可用的MCP工具列表
     let availableTools = mcpHelper.getAvailableEndpoints()
 
-    // 构建工具信息提示
+    // 构建工具信息提示，包含参数要求
     let toolsInfo = availableTools
       .map(
         tool => `
   - 工具名称: ${tool.name}
-    描述: ${tool.description}`
+    描述: ${tool.description}
+    参数要求: ${
+      tool.parameters ? this.formatParameters(tool.parameters) : '无'
+    }`
       )
       .join('')
 
@@ -56,9 +115,7 @@ class AIHelper {
     const provider = getSelectedServiceProvider()
     console.log('Selected LLM provider:', provider)
 
-    // 使用llm-service-provider的流式生成功能
-    let result = ''
-    const prompt =
+    const pre_prompt =
       '你是一个围棋助手，能够分析棋局、提供建议并回答关于围棋策略的问题。请注意，你必须返回json格式的响应，不要在JSON前后添加任何其他文本（如```json等标记）。\n' +
       '\n' +
       '你有两种响应格式可以使用:\n' +
@@ -68,16 +125,21 @@ class AIHelper {
       '2. 当你需要调用工具进行深入分析时，必须使用mcp格式，不要在response中提及工具名称:\n' +
       '{"mcp":{"tool":{"name":"工具名称","description":"工具描述","parameters":{参数对象}}}}' +
       '\n' +
-      '你可以使用以下MCP工具:\n' +
+      '你可以使用以下MCP工具:\n'
+    // 使用llm-service-provider的流式生成功能
+    let prompt =
+      pre_prompt +
       toolsInfo +
       '\n' +
+      gameInfo +
       '当前游戏状态:\n' +
       boardContext +
       '\n' +
       message
 
     const generator = streamDefinition(prompt, 'zh')
-
+    console.log('Prompt:', pre_prompt)
+    let result = ''
     for await (const chunk of generator) {
       result += chunk
     }
