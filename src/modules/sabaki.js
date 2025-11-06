@@ -3038,10 +3038,6 @@ class Sabaki extends EventEmitter {
     )
   }
 
-  openAIActionMenu({x, y} = {}) {
-    return this.aiManager.openAIActionMenu({x, y})
-  }
-
   async sendLLMMessage(message) {
     return await this.aiManager.sendLLMMessage(message)
   }

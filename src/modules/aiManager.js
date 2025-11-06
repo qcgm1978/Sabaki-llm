@@ -14,32 +14,6 @@ class AIManager {
     this.setting = remote.require('./setting')
   }
 
-  /**
-   * 打开AI操作菜单
-   */
-  openAIActionMenu({x, y} = {}) {
-    let t = i18n.context('menu.aiAction')
-
-    helper.popupMenu(
-      [
-        {
-          label: t('Configure LLM API Keys…'),
-          click: () => {
-            this.openApiKeyManager()
-          }
-        },
-        {
-          label: t('Open AI Chat'),
-          click: () => {
-            this.sabaki.openDrawer('ai-chat')
-          }
-        }
-      ],
-      x,
-      y
-    )
-  }
-
   openApiKeyManager() {
     // 由于ApiKeyManager是React组件，我们需要使用React或Preact进行渲染
     // 创建一个临时容器来渲染API密钥管理器
@@ -130,6 +104,15 @@ class AIManager {
 
     // 这里将调用更新后的aiHelper方法
     return await aiHelper.sendLLMMessage(message, gameContext)
+  }
+
+  // 直接添加AI消息到聊天抽屉
+  addAIMessage(content) {
+    // 打开AI聊天抽屉
+    this.sabaki.openDrawer('ai-chat')
+
+    // 通知AIChatDrawer组件添加新消息
+    this.sabaki.emit('ai.message.add', {role: 'ai', content: content})
   }
 }
 

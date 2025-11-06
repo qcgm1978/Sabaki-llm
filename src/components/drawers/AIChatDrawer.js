@@ -23,6 +23,21 @@ export default class AIChatDrawer extends Drawer {
       tempInput: ''
     }
     this.messagesContainer = null
+
+    // 监听AI消息添加事件
+    sabaki.on('ai.message.add', this.handleAIMessageAdd)
+  }
+
+  componentWillUnmount() {
+    // 移除事件监听
+    sabaki.off('ai.message.add', this.handleAIMessageAdd)
+  }
+
+  handleAIMessageAdd = message => {
+    // 添加新的AI消息到消息列表
+    this.setState(prevState => ({
+      messages: [...prevState.messages, message]
+    }))
   }
 
   handleInputChange = evt => {
@@ -396,6 +411,28 @@ export default class AIChatDrawer extends Drawer {
               title: t('MCP Tools')
             },
             '🔧'
+          ),
+          h(
+            'button',
+            {
+              onClick: () => {
+                sabaki.aiManager.openApiKeyManager()
+              },
+              class: 'drawer-action',
+              title: t('Configure LLM API Keys…')
+            },
+            '🔑'
+          ),
+          h(
+            'button',
+            {
+              onClick: () => {
+                sabaki.closeDrawer()
+              },
+              class: 'drawer-action',
+              title: t('Close AI Chat')
+            },
+            '✕'
           ),
           h(
             'button',
