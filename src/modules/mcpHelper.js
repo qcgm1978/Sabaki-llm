@@ -3,21 +3,13 @@ const setting = remote.require('./setting')
 import engineSyncer from './enginesyncer.js'
 import sabaki from './sabaki.js'
 
-/**
- * MCP (Model Context Protocol) 助手模块，处理LLM与KataGo等工具的通信
- * 基于Anthropic的Model Context Protocol开放标准设计
- */
 class MCPHelper {
   constructor() {
     this.mcpEndpoints = []
     this.registerDefaultEndpoints()
   }
 
-  /**
-   * 注册默认的MCP端点
-   */
   registerDefaultEndpoints() {
-    // 注册KataGo分析端点
     this.registerEndpoint({
       id: 'katago-analysis',
       name: 'KataGo分析',
@@ -40,7 +32,6 @@ class MCPHelper {
       handler: this.handleKataGoAnalysis.bind(this)
     })
 
-    // 注册KataGo评分端点
     this.registerEndpoint({
       id: 'katago-score',
       name: 'KataGo评分',
@@ -58,30 +49,6 @@ class MCPHelper {
       handler: this.handleKataGoScore.bind(this)
     })
 
-    // 注册获取引擎名称端点
-    this.registerEndpoint({
-      id: 'get-engine-name',
-      name: '获取引擎名称',
-      description: '获取当前配置的AI引擎名称',
-      parameters: {
-        type: 'object',
-        properties: {}
-      },
-      handler: this.handleGetEngineName.bind(this)
-    })
-
-    this.registerEndpoint({
-      id: 'get-engine-commands',
-      name: '获取引擎命令列表',
-      description: '获取当前配置的AI引擎支持的命令列表',
-      parameters: {
-        type: 'object',
-        properties: {}
-      },
-      handler: this.handleGetEngineCommands.bind(this)
-    })
-
-    // 注册GTP命令端点
     const gtpCommands = [
       {
         id: 'protocol_version',
@@ -264,9 +231,7 @@ class MCPHelper {
       {id: 'stop', name: 'stop', description: '停止当前操作'}
     ]
 
-    // 为每个GTP命令注册MCP端点
     gtpCommands.forEach(cmd => {
-      // 定义不需要参数的命令列表
       const noParamsCommands = [
         'protocol_version',
         'name',
@@ -290,10 +255,8 @@ class MCPHelper {
         'stop'
       ]
 
-      // 对于不需要参数的命令，不设置parameters属性
       let parameters = null
 
-      // 为需要参数的命令设置默认参数列表
       if (!noParamsCommands.includes(cmd.id)) {
         parameters = {
           type: 'object',
@@ -310,7 +273,6 @@ class MCPHelper {
         }
       }
 
-      // 为需要特定参数的命令提供详细的参数说明
       if (cmd.id === 'genmove') {
         parameters = {
           type: 'object',
@@ -812,7 +774,6 @@ class MCPHelper {
         }
       }
 
-      // 注册MCP端点，只有当parameters不为null时才包含该属性
       const endpoint = {
         id: `gtp-${cmd.id}`,
         name: `GTP: ${cmd.name}`,
@@ -824,10 +785,8 @@ class MCPHelper {
       }
 
       endpoint.handler = async (params, gameContext) => {
-        // 根据不同命令类型构建args数组
         let commandArgs = params.args || []
 
-        // 为新增的命令添加参数处理逻辑
         if (cmd.id === 'final_status_list' && params.status) {
           commandArgs = [params.status]
         } else if (cmd.id === 'debug_moves' && params.n !== undefined) {
@@ -879,7 +838,6 @@ class MCPHelper {
           if (params.interval !== undefined)
             commandArgs.push(params.interval.toString())
 
-          // 添加各种key-value参数
           const boolParams = ['rootInfo', 'ownership', 'pvVisits']
           boolParams.forEach(param => {
             if (params[param] !== undefined) {
@@ -909,15 +867,10 @@ class MCPHelper {
         return await this.handleGTPCommand(cmd.name, commandArgs, gameContext)
       }
 
-      // 注册端点
       this.registerEndpoint(endpoint)
     })
   }
 
-  /**
-   * 注册新的MCP端点
-   * @param {Object} endpoint - 端点配置
-   */
   registerEndpoint(endpoint) {
     this.mcpEndpoints.push(endpoint)
   }
@@ -930,12 +883,6 @@ class MCPHelper {
     return x + y
   }
 
-  /**
-   * 处理KataGo分析请求
-   * @param {Object} params - 请求参数
-   * @param {Object} gameContext - 游戏上下文
-   * @returns {Promise<Object>} 分析结果
-   */
   async handleKataGoAnalysis(params, gameContext) {
     let syncer = null
     if (
@@ -1020,12 +967,6 @@ class MCPHelper {
     })
   }
 
-  /**
-   * 处理KataGo评分请求
-   * @param {Object} params - 请求参数
-   * @param {Object} gameContext - 游戏上下文
-   * @returns {Promise<Object>} 评分结果
-   */
   async handleGetEngineName(params, gameContext) {
     let engine = setting.get('gtp.engine')
 
@@ -1134,15 +1075,7 @@ class MCPHelper {
     return {data: {score: response.content.trim()}}
   }
 
-  /**
-   * 通用GTP命令处理函数
-   * @param {string} command - GTP命令名称
-   * @param {Array} args - 命令参数
-   * @param {Object} gameContext - 游戏上下文
-   * @returns {Promise<Object>} 命令执行结果
-   */
   async handleGTPCommand(command, args, gameContext) {
-    // 验证参数
     if (command === 'genmove' && args.length < 1) {
       return {command, args, response: '? 缺少颜色参数', success: false}
     }
@@ -1233,7 +1166,6 @@ class MCPHelper {
     let syncer = null
     let needStop = false
 
-    // 获取引擎实例
     if (
       sabaki &&
       sabaki.state &&
@@ -1260,7 +1192,6 @@ class MCPHelper {
       needStop = true
     }
 
-    // 对于需要同步棋盘状态的命令，先同步
     const needSync = [
       'genmove',
       'play',
@@ -1280,15 +1211,12 @@ class MCPHelper {
       )
     }
 
-    // 执行GTP命令
     let response = await syncer.queueCommand({name: command, args: args || []})
 
-    // 处理完成后停止引擎（如果是我们启动的）
     if (needStop) {
       await syncer.stop()
     }
 
-    // 返回命令执行结果
     return {
       data: {
         command: command,
@@ -1299,12 +1227,6 @@ class MCPHelper {
     }
   }
 
-  /**
-   * 生成MCP格式的工具调用消息
-   * @param {string} endpointId - 端点ID
-   * @param {Object} params - 参数
-   * @returns {Object} MCP格式消息
-   */
   generateMCPMessage(endpointId, params) {
     let endpoint = this.mcpEndpoints.find(e => e.id === endpointId)
     if (!endpoint) {
@@ -1322,12 +1244,6 @@ class MCPHelper {
     }
   }
 
-  /**
-   * 处理来自LLM的MCP请求
-   * @param {Object} mcpRequest - MCP请求
-   * @param {Object} gameContext - 游戏上下文
-   * @returns {Promise<Object>} 处理结果
-   */
   async handleMCPRequest(mcpRequest, gameContext) {
     if (!mcpRequest.mcp || !mcpRequest.mcp.tool) {
       return {error: '无效的MCP请求格式'}
@@ -1346,10 +1262,6 @@ class MCPHelper {
     )
   }
 
-  /**
-   * 获取可用的MCP端点列表
-   * @returns {Array} 端点列表
-   */
   getAvailableEndpoints() {
     return this.mcpEndpoints.map(e => ({
       id: e.id,

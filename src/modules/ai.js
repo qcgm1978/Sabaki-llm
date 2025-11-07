@@ -135,6 +135,7 @@ class AIHelper {
       '当前游戏状态:\n' +
       boardContext +
       '\n' +
+      '用户问题:' +
       message
 
     const generator = streamDefinition(prompt, 'zh')

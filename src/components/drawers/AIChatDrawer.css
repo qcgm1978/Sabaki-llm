@@ -278,7 +278,6 @@
   background: var(--text-color-secondary);
 }
 
-/* MCP Tools UI Styles */
 .ai-chat-mcp-tools {
   border-bottom: 1px solid var(--border-color);
   padding: 15px;
@@ -418,7 +417,6 @@
   border-radius: 6px;
 }
 
-/* GTP console styles for MCP tools */
 .ai-chat-drawer.gtp-console .ai-chat-mcp-tools {
   background: #181818;
   border-bottom: 1px solid #333;

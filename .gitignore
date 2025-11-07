@@ -8,6 +8,7 @@ bundle.js.LICENSE.txt
 
 *.pdn
 *.vbs
+*.pdf
 
 # 忽略未跟踪的模块文件
 src/modules/fileManager.js

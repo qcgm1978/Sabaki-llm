@@ -11,7 +11,7 @@ export default class AIChatDrawer extends Drawer {
   constructor(props) {
     super(props)
     this.scrollToBottom = true
-    // 从localStorage加载历史记录
+
     const savedHistory = JSON.parse(
       localStorage.getItem('sabaki-llm-history') || '[]'
     )
@@ -28,23 +28,19 @@ export default class AIChatDrawer extends Drawer {
     }
     this.messagesContainer = null
 
-    // 监听AI消息添加事件
     sabaki.on('ai.message.add', this.handleAIMessageAdd)
   }
 
   componentWillUnmount() {
-    // 移除事件监听
     sabaki.off('ai.message.add', this.handleAIMessageAdd)
-    // 保存历史记录
+
     localStorage.setItem(
       'sabaki-llm-history',
       JSON.stringify(this.state.history)
     )
   }
 
-  // 组件更新时保存历史记录
   componentDidUpdate(prevProps, prevState) {
-    // 当历史记录变化时保存
     if (prevState.history !== this.state.history) {
       localStorage.setItem(
         'sabaki-llm-history',
@@ -52,7 +48,6 @@ export default class AIChatDrawer extends Drawer {
       )
     }
 
-    // 处理滚动到底部
     if (this.messagesContainer && this.scrollToBottom) {
       setTimeout(() => {
         if (this.messagesContainer) {
@@ -63,7 +58,6 @@ export default class AIChatDrawer extends Drawer {
   }
 
   handleAIMessageAdd = message => {
-    // 添加新的AI消息到消息列表
     this.setState(prevState => ({
       messages: [...prevState.messages, message]
     }))
@@ -105,7 +99,7 @@ export default class AIChatDrawer extends Drawer {
     }
 
     let response = await sabaki.sendLLMMessage(message, gameContext)
-    // 移除等待消息并添加响应
+
     const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
     if (response.error) {
       this.setState({
@@ -124,14 +118,6 @@ export default class AIChatDrawer extends Drawer {
         sending: false
       })
     }
-    // } catch (err) {
-    //   // 移除等待消息并添加错误
-    //   const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
-    //   this.setState({
-    //     messages: [...updatedMessages, {role: 'error', content: err.message}],
-    //     sending: false
-    //   })
-    // }
   }
 
   handleKeyDown = evt => {
@@ -176,8 +162,6 @@ export default class AIChatDrawer extends Drawer {
     this.setState({messages: []})
   }
 
-  // 滚动逻辑已合并到上面的componentDidUpdate方法中
-
   toggleMCPTools = () => {
     this.setState(prevState => ({
       showMCPTools: !prevState.showMCPTools,
@@ -186,7 +170,6 @@ export default class AIChatDrawer extends Drawer {
   }
 
   handleToolSelect = tool => {
-    // 初始化工具参数为默认值
     let defaultParams = {}
     if (tool.parameters && tool.parameters.properties) {
       Object.keys(tool.parameters.properties).forEach(key => {
@@ -223,24 +206,24 @@ export default class AIChatDrawer extends Drawer {
     }))
 
     try {
-      // 传递当前游戏上下文
       const gameContext = {
         gameTrees: sabaki.state.gameTrees,
         gameIndex: sabaki.state.gameIndex,
         treePosition: sabaki.state.treePosition
       }
 
-      // 调用MCP工具
-      let response = await sabaki.aiManager.sendLLMMessage(
-        {
-          mcp: {
-            tool: {
-              name: this.state.activeTool.name,
-              description: this.state.activeTool.description,
-              parameters: this.state.toolParams
-            }
+      const message = {
+        mcp: {
+          tool: {
+            name: this.state.activeTool.name,
+            description: this.state.activeTool.description,
+            parameters: this.state.toolParams
           }
-        },
+        }
+      }
+      const msg = JSON.stringify(message)
+      let response = await sabaki.aiManager.sendLLMMessage(
+        this.state.activeTool.description,
         gameContext
       )
 
@@ -270,7 +253,6 @@ export default class AIChatDrawer extends Drawer {
   }
 
   renderMessage(message) {
-    // 处理等待消息的特殊情况
     if (message.role === 'waiting') {
       return h(
         'li',
@@ -283,7 +265,6 @@ export default class AIChatDrawer extends Drawer {
       )
     }
 
-    // 处理工具结果消息
     if (message.role === 'tool-result') {
       return h(
         'li',
@@ -297,7 +278,6 @@ export default class AIChatDrawer extends Drawer {
       )
     }
 
-    // 处理系统消息
     if (message.role === 'system') {
       return h(
         'li',
@@ -340,23 +320,61 @@ export default class AIChatDrawer extends Drawer {
   renderMCPTools() {
     let availableTools = mcpHelper.getAvailableEndpoints()
 
+    let kataGoTools = availableTools.filter(
+      tool => tool.id.startsWith('katago-') || !tool.id.startsWith('gtp-')
+    )
+    let gtpTools = availableTools.filter(tool => tool.id.startsWith('gtp-'))
+
     return h(
       'div',
       {class: 'ai-chat-mcp-tools'},
       h(
         'div',
-        {class: 'ai-chat-mcp-tool-list'},
-        availableTools.map(tool =>
+        {class: 'ai-chat-mcp-tool-selects'},
+
+        h(
+          'div',
+          {class: 'ai-chat-mcp-tool-select-group'},
+          h('label', null, 'KataGo工具'),
           h(
-            'button',
+            'select',
             {
-              key: tool.id,
-              class: `button button-small ${
-                this.state.activeTool?.id === tool.id ? 'active' : ''
-              }`,
-              onClick: () => this.handleToolSelect(tool)
+              value: this.state.activeTool?.id || '',
+              onChange: e => {
+                const toolId = e.target.value
+                if (toolId) {
+                  const tool = availableTools.find(t => t.id === toolId)
+                  if (tool) this.handleToolSelect(tool)
+                }
+              }
             },
-            tool.name
+            h('option', {value: ''}, '-- 选择工具 --'),
+            kataGoTools.map(tool =>
+              h('option', {key: tool.id, value: tool.id}, tool.description)
+            )
+          )
+        ),
+
+        h(
+          'div',
+          {class: 'ai-chat-mcp-tool-select-group'},
+          h('label', null, 'GTP命令'),
+          h(
+            'select',
+            {
+              value: this.state.activeTool?.id || '',
+              onChange: e => {
+                const toolId = e.target.value
+                if (toolId) {
+                  const tool = availableTools.find(t => t.id === toolId)
+                  if (tool) this.handleToolSelect(tool)
+                }
+              }
+            },
+            h('option', {value: ''}, '-- 选择GTP命令 --'),
+            gtpTools.map(tool =>
+              h('option', {key: tool.id, value: tool.id}, tool.description)
+            )
           )
         )
       ),
