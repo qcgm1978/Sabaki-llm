@@ -23,9 +23,7 @@ if [ "$1" ]; then
   git tag v$VERSION
   
   echo "Pushing to remote repo..."
-  if [ "$AUTO_COMMIT" = true ]; then
-    git push origin HEAD
-  fi
+  git push origin HEAD
   git push origin v$VERSION -f
   
   echo "Done: Created tag v$VERSION and pushed to remote repo"
