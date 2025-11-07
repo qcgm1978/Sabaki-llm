@@ -4,8 +4,7 @@
 
 [英文版本 (English Version)](README_EN.md)
 
-[![下载最新版本](https://img.shields.io/github/downloads/SabakiHQ/Sabaki/latest/total?label=下载)](https://github.com/SabakiHQ/Sabaki/releases)
-[![CI](https://github.com/SabakiHQ/Sabaki/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/SabakiHQ/Sabaki/actions)
+[![下载最新版本](https://img.shields.io/github/downloads/qcgm1978/Sabaki-llm/latest/total?label=下载)](https://github.com/qcgm1978/Sabaki-llm/releases)
 
 ## AI Agent 核心功能
 
