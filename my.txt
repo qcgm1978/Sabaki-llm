@@ -1,6 +1,0 @@
-Metal backend 0: Apple M2, Model version 8 g170-b40c256x2-s5095420928-d1229425124, 19x19
-Initializing board with boardXSize 19 boardYSize 19
-Loaded config /opt/homebrew/Cellar/katago/1.16.4/share/katago/configs/gtp_example.cfg
-Loaded model /opt/homebrew/Cellar/katago/1.16.4/share/katago/g170-b40c256x2-s5095420928-d1229425124.bin.gz
-Model name: g170-b40c256x2-s5095420928-d1229425124
-GTP ready, beginning main protocol loop
