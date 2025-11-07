@@ -23,8 +23,7 @@ if [ "$1" ]; then
   git tag v$VERSION
   
   echo "Pushing to remote repo..."
-  CURRENT_BRANCH=$(git branch --show-current)
-  git push origin $CURRENT_BRANCH
+  git push origin HEAD:master
   git push origin v$VERSION -f
   
   echo "Done: Created tag v$VERSION and pushed to remote repo"
