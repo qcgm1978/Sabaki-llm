@@ -20,12 +20,17 @@ export default class AIChatDrawer extends Drawer {
       input: '',
       sending: false,
       showMCPTools: false,
+      showQuestionPrompts: false,
       activeTool: null,
       toolParams: {},
       history: savedHistory,
       currentHistoryIndex: -1,
-      tempInput: ''
+      tempInput: '',
+      questionCategories: []
     }
+
+    // 加载问题分类
+    this.loadQuestionCategories()
     this.messagesContainer = null
 
     sabaki.on('ai.message.add', this.handleAIMessageAdd)
@@ -55,6 +60,61 @@ export default class AIChatDrawer extends Drawer {
         }
       }, 0)
     }
+  }
+
+  loadQuestionCategories = async () => {
+    try {
+      // 导入问题分类JSON文件
+      const response = await import('../../../llm_prompts/go_questions.json')
+      this.setState({questionCategories: response.default.categories})
+    } catch (error) {
+      console.error('Failed to load question categories:', error)
+    }
+  }
+
+  toggleQuestionPrompts = () => {
+    this.setState(prevState => ({
+      showQuestionPrompts: !prevState.showQuestionPrompts,
+      showMCPTools: prevState.showQuestionPrompts
+        ? prevState.showMCPTools
+        : false
+    }))
+  }
+
+  selectQuestion = question => {
+    this.setState({input: question})
+    // 隐藏问题提示面板
+    this.setState({showQuestionPrompts: false})
+  }
+
+  renderQuestionPrompts() {
+    return h(
+      'div',
+      {class: 'ai-chat-question-prompts'},
+      h('h4', null, '围棋问题示例'),
+      this.state.questionCategories.map((category, idx) =>
+        h(
+          'div',
+          {key: idx, class: 'question-category'},
+          h('h5', null, category.name),
+          h(
+            'div',
+            {class: 'question-list'},
+            category.questions.map((question, qIdx) =>
+              h(
+                'button',
+                {
+                  key: qIdx,
+                  class: 'question-item',
+                  onClick: () => this.selectQuestion(question)
+                },
+                question
+              )
+            )
+          )
+        )
+      )
+    )
   }
 
   handleAIMessageAdd = message => {
@@ -295,10 +355,28 @@ export default class AIChatDrawer extends Drawer {
       roleLabel = 'You>'
     } else if (message.role === 'ai') {
       roleClass = 'engine'
-      roleLabel = ' AI>'
+      roleLabel = 'AI >'
     } else if (message.role === 'error') {
       roleClass = 'error'
       roleLabel = '!>'
+    }
+
+    // 对于AI消息，允许HTML内容
+    if (message.role === 'ai') {
+      return h(
+        'li',
+        {class: 'command'},
+        h(
+          'div',
+          {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
+          h('span', {class: roleClass}, roleLabel + '  '),
+          h('span', {
+            dangerouslySetInnerHTML: {
+              __html: message.content.replace(/\n/g, '<br>  ')
+            }
+          })
+        )
+      )
     }
 
     const formattedContent = message.content.replace(/\n/g, '\n  ')
@@ -451,6 +529,17 @@ export default class AIChatDrawer extends Drawer {
           h(
             'button',
             {
+              onClick: this.toggleQuestionPrompts,
+              class: `drawer-action ${
+                this.state.showQuestionPrompts ? 'active' : ''
+              }`,
+              title: t('Question Prompts')
+            },
+            '💡'
+          ),
+          h(
+            'button',
+            {
               onClick: () => {
                 sabaki.aiManager.openApiKeyManager()
               },
@@ -496,6 +585,7 @@ export default class AIChatDrawer extends Drawer {
       ),
 
       this.state.showMCPTools && this.renderMCPTools(),
+      this.state.showQuestionPrompts && this.renderQuestionPrompts(),
 
       h(
         'ol',

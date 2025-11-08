@@ -733,7 +733,7 @@ class MCPHelper {
       gameContext.treePosition
     )
 
-    let visits = params.visits || 50
+    let visits = 100
     let analyzeCommand = {
       name: 'lz-analyze',
       args: [visits.toString()]
@@ -781,7 +781,7 @@ class MCPHelper {
           syncer.stop()
         }
         resolve({error: '分析超时'})
-      }, 10000)
+      }, 100000)
     })
   }
 

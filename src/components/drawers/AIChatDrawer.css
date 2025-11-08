@@ -1,5 +1,5 @@
 ::marker {
-    font-style: normal;
+  font-style: normal;
 }
 
 .drawer-input-horizontal {
@@ -22,7 +22,6 @@
   background: var(--drawer-bg-color);
 }
 
-
 .ai-chat-drawer.gtp-console {
   position: fixed;
   right: 0;
@@ -31,13 +30,13 @@
   width: 400px;
   background-color: #111;
   color: #d0d0d0;
-  box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
   z-index: 10;
   display: grid;
   grid-template-rows: 40px 1fr auto;
   word-wrap: break-word;
   white-space: normal;
-  padding: 0; 
+  padding: 0;
 }
 
 .ai-chat-drawer .drawer-header {
@@ -48,7 +47,6 @@
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border-color);
 }
-
 
 .ai-chat-drawer.gtp-console .drawer-header {
   padding: 10px;
@@ -93,9 +91,8 @@
   margin-bottom: 15px;
 }
 
-
 .ai-chat-drawer.gtp-console .chat-messages {
-  padding: 0.3rem 10px .3rem 2rem;
+  padding: 0.3rem 10px 0.3rem 2rem;
   margin: 0;
   font-family: 'Consolas, Menlo, Monaco, "Ubuntu Mono", monospace';
   font-size: 14px;
@@ -120,8 +117,14 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ai-chat-drawer .message-header {
@@ -149,7 +152,6 @@
   line-height: 1.5;
   word-wrap: break-word;
 }
-
 
 .ai-chat-drawer.gtp-console .message-content {
   word-wrap: break-word;
@@ -193,7 +195,6 @@
   gap: 10px;
 }
 
-
 .ai-chat-drawer.gtp-console .chat-input-container {
   background: #181818;
   border-top: 1px solid #333;
@@ -215,7 +216,6 @@
   box-sizing: border-box;
 }
 
-
 .ai-chat-drawer.gtp-console textarea {
   background-color: transparent;
   color: #d0d0d0;
@@ -223,13 +223,83 @@
   border-radius: 4px;
   font-family: 'Consolas, Menlo, Monaco, "Ubuntu Mono", monospace';
   font-size: 14px;
-  resize: none; 
+  resize: none;
   min-height: 40px;
 }
 
 .ai-chat-drawer textarea:focus {
   outline: none;
   border-color: var(--accent-color);
+}
+
+/* 问题提示样式 */
+.ai-chat-question-prompts {
+  background: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px;
+  min-height: 400px;
+  overflow-y: auto;
+  background: darkgreen;
+}
+
+.ai-chat-question-prompts h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.question-category {
+  margin-bottom: 20px;
+}
+
+.question-category h5 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: var(--text-color);
+  font-size: 14px;
+  font-weight: 500;
+  border-left: 3px solid var(--accent-color);
+  padding-left: 8px;
+}
+
+.question-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.question-item {
+  background: var(--input-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-color);
+  font-size: 13px;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.question-item:hover {
+  background: var(--accent-color-light);
+  border-color: var(--accent-color);
+  transform: translateY(-1px);
+}
+
+.question-item:active {
+  transform: translateY(0);
+}
+
+/* 响应式布局 */
+@media (min-width: 768px) {
+  .question-list {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
 }
 
 .ai-chat-drawer textarea:disabled {
@@ -250,7 +320,6 @@
   transition: background-color 0.2s;
 }
 
-
 .ai-chat-drawer.gtp-console .send-button {
   align-self: center;
   padding: 6px 15px;
@@ -264,7 +333,6 @@
   background: var(--accent-color-dark);
 }
 
-
 .ai-chat-drawer.gtp-console .send-button:hover:not(:disabled) {
   background: #444;
 }
@@ -273,7 +341,6 @@
   background: var(--text-color-secondary);
   cursor: not-allowed;
 }
-
 
 .ai-chat-drawer .chat-messages::-webkit-scrollbar {
   width: 8px;
@@ -397,7 +464,6 @@
   background: var(--text-color-secondary);
   cursor: not-allowed;
 }
-
 
 .ai-chat-drawer .command {
   margin-bottom: 15px;

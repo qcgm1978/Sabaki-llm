@@ -4,15 +4,9 @@ import mcpHelper from './mcpHelper.js'
 import {
   streamDefinition,
   getSelectedServiceProvider,
-  hasApiKey,
-  setApiKey
+  hasApiKey
 } from 'llm-service-provider'
 import sabaki from './sabaki.js'
-
-const savedApiKey = setting.get('ai.llm.apiKey')
-if (savedApiKey) {
-  setApiKey(savedApiKey)
-}
 
 class AIHelper {
   formatParameters(parameters) {
@@ -147,11 +141,7 @@ class AIHelper {
     console.log('raw response:', result)
     let parsedResponse = JSON.parse(result.replace(/```json|```/g, ''))
     if (parsedResponse.mcp && parsedResponse.mcp.tool) {
-      let content = `${provider}: ${parsedResponse.mcp.tool.description}`
-
-      if (sabaki.aiManager && sabaki.aiManager.addAIMessage) {
-        sabaki.aiManager.addAIMessage(content)
-      }
+      let toolDescription = `${provider}: ${parsedResponse.mcp.tool.description}`
 
       let toolResult = await mcpHelper.handleMCPRequest(
         parsedResponse,
@@ -159,14 +149,23 @@ class AIHelper {
       )
 
       if (toolResult.error) {
-        return {content: `工具调用失败: ${toolResult.error}`}
+        return {
+          content: `<div style="color: lightblue;">${toolDescription}</div><div style="color: yellow;">工具调用失败: ${toolResult.error}</div>`
+        }
       }
 
-      return await this.sendToolResultToAI(
+      let resultResponse = await this.sendToolResultToAI(
         message,
         toolResult.data,
         gameContext
       )
+
+      // 将工具调用信息和结果合并在同一消息中，并添加颜色区分
+      if (resultResponse.content) {
+        resultResponse.content = `<div style="color: lightblue;">${toolDescription}</div><div style="color: lightgreen;">${resultResponse.content}</div>`
+      }
+
+      return resultResponse
     } else if (parsedResponse.response) {
       return {
         content: parsedResponse.response.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
