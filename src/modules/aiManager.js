@@ -47,7 +47,11 @@ class AIManager {
             root.render(
               React.createElement(ApiKeyManager, {
                 isOpen: true,
-                onSave: key => console.log('API key saved:', key),
+                onSave: key => {
+                  console.log('API key saved:', key)
+                  // 将API密钥保存到设置中以持久化
+                  this.setting.set('ai.llm.apiKey', key)
+                },
                 showCloseButton: false,
                 onClose: handleClose,
                 language: 'zh',
@@ -94,12 +98,14 @@ class AIManager {
   /**
    * 发送消息到DeepSeek API
    */
-  async sendLLMMessage(message) {
+  async sendLLMMessage(message, gameContext) {
     // 调用AI助手模块处理消息，使用llm-service-provider
-    const gameContext = {
-      gameTrees: this.sabaki.state.gameTrees,
-      gameIndex: this.sabaki.state.gameIndex,
-      treePosition: this.sabaki.state.treePosition
+    if (!gameContext) {
+      gameContext = {
+        gameTrees: this.sabaki.state.gameTrees,
+        gameIndex: this.sabaki.state.gameIndex,
+        treePosition: this.sabaki.state.treePosition
+      }
     }
 
     // 这里将调用更新后的aiHelper方法

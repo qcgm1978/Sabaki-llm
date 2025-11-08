@@ -4,9 +4,16 @@ import mcpHelper from './mcpHelper.js'
 import {
   streamDefinition,
   getSelectedServiceProvider,
-  hasApiKey
+  hasApiKey,
+  setApiKey
 } from 'llm-service-provider'
 import sabaki from './sabaki.js'
+
+// 从设置中读取并设置API密钥
+const savedApiKey = setting.get('ai.llm.apiKey')
+if (savedApiKey) {
+  setApiKey(savedApiKey)
+}
 
 /**
  * AI助手模块，处理与DeepSeek API的交互并集成MCP协议支持
@@ -49,9 +56,9 @@ class AIHelper {
 
   /**
    * 向DeepSeek API发送消息，支持MCP协议
-   * @param {string} message - 用户消息
+   * @param {Object|string} message - 用户消息或包含mcp格式的消息对象
    * @param {Object} gameContext - 游戏上下文信息
-   * @returns {Promise<Object>} API响应
+   * @returns {Promise<Object>}
    */
   async sendLLMMessage(message, gameContext) {
     if (!hasApiKey()) {
@@ -71,6 +78,23 @@ class AIHelper {
       if (node.data.B) moves.unshift(`B[${node.data.B.join('][')}]`)
       if (node.data.W) moves.unshift(`W[${node.data.W.join('][')}]`)
       node = tree.get(node.parentId)
+    }
+
+    // 处理消息，支持普通字符串或mcp格式的消息对象
+    let userMessage = message
+    let parameters = {}
+
+    // 如果是mcp格式的消息对象
+    if (typeof message === 'object' && message.mcp && message.mcp.tool) {
+      userMessage = message.mcp.tool.description
+      parameters = message.mcp.tool.parameters || {}
+    }
+
+    // 构建完整消息，包含参数信息
+    let fullMessage = userMessage
+    if (Object.keys(parameters).length > 0) {
+      const paramsStr = JSON.stringify(parameters)
+      fullMessage = `${userMessage}\n\n工具参数: ${paramsStr}`
     }
 
     let boardContext = moves.join('\n')
@@ -136,10 +160,11 @@ class AIHelper {
       boardContext +
       '\n' +
       '用户问题:' +
-      message
+      fullMessage
 
     const generator = streamDefinition(prompt, 'zh')
-    console.log('Prompt:', pre_prompt)
+    // console.log('Prompt:', pre_prompt)
+    console.log('message:', fullMessage)
     let result = ''
     for await (const chunk of generator) {
       result += chunk

@@ -222,10 +222,7 @@ export default class AIChatDrawer extends Drawer {
         }
       }
       const msg = JSON.stringify(message)
-      let response = await sabaki.aiManager.sendLLMMessage(
-        this.state.activeTool.description,
-        gameContext
-      )
+      let response = await sabaki.aiManager.sendLLMMessage(message, gameContext)
 
       this.setState(prevState => ({
         messages: [
@@ -298,7 +295,7 @@ export default class AIChatDrawer extends Drawer {
       roleLabel = 'You>'
     } else if (message.role === 'ai') {
       roleClass = 'engine'
-      roleLabel = 'AI>'
+      roleLabel = ' AI>'
     } else if (message.role === 'error') {
       roleClass = 'error'
       roleLabel = '!>'
@@ -398,17 +395,19 @@ export default class AIChatDrawer extends Drawer {
                     {key: paramName, class: 'ai-chat-mcp-tool-param'},
                     h('label', null, paramDef.description),
                     h('input', {
-                      type: 'number',
+                      type: paramDef.type === 'number' ? 'number' : 'text',
                       value:
                         this.state.toolParams[paramName] ||
                         paramDef.default ||
                         '',
-                      onChange: e =>
-                        this.handleToolParamChange(
-                          paramName,
-                          parseFloat(e.target.value)
-                        ),
-                      min: '1'
+                      onChange: e => {
+                        let value = e.target.value
+                        if (paramDef.type === 'number') {
+                          value = parseFloat(value)
+                        }
+                        this.handleToolParamChange(paramName, value)
+                      },
+                      min: paramDef.type === 'number' ? '1' : undefined
                     })
                   )
               )

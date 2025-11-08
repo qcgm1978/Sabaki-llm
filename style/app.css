@@ -24,10 +24,10 @@ body, input, button, select, option, textarea {
 body, a {
   cursor: default;
   overflow: hidden;
-  user-select: none;
+  /* user-select: none;
   -ms-user-select: none;
   -moz-user-select: none;
-  -webkit-user-select: none;
+  -webkit-user-select: none; */
 }
 
 pre, code {
