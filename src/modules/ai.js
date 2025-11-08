@@ -9,21 +9,12 @@ import {
 } from 'llm-service-provider'
 import sabaki from './sabaki.js'
 
-// 从设置中读取并设置API密钥
 const savedApiKey = setting.get('ai.llm.apiKey')
 if (savedApiKey) {
   setApiKey(savedApiKey)
 }
 
-/**
- * AI助手模块，处理与DeepSeek API的交互并集成MCP协议支持
- */
 class AIHelper {
-  /**
-   * 格式化参数要求显示
-   * @param {Object} parameters - 参数对象
-   * @returns {string} 格式化后的参数要求字符串
-   */
   formatParameters(parameters) {
     let result = []
 
@@ -54,43 +45,31 @@ class AIHelper {
     return result.length > 0 ? result.join(' | ') : '无'
   }
 
-  /**
-   * 向DeepSeek API发送消息，支持MCP协议
-   * @param {Object|string} message - 用户消息或包含mcp格式的消息对象
-   * @param {Object} gameContext - 游戏上下文信息
-   * @returns {Promise<Object>}
-   */
   async sendLLMMessage(message, gameContext) {
     if (!hasApiKey()) {
       return {error: 'LLM API Key not configured'}
     }
 
-    // try {
-    // 获取当前游戏信息作为上下文
     let {gameTrees, gameIndex, treePosition} = gameContext
     let tree = gameTrees[gameIndex]
     let currentNode = tree.get(treePosition)
     let moves = []
     let node = currentNode
 
-    // 收集所有棋步作为上下文
     while (node) {
       if (node.data.B) moves.unshift(`B[${node.data.B.join('][')}]`)
       if (node.data.W) moves.unshift(`W[${node.data.W.join('][')}]`)
       node = tree.get(node.parentId)
     }
 
-    // 处理消息，支持普通字符串或mcp格式的消息对象
     let userMessage = message
     let parameters = {}
 
-    // 如果是mcp格式的消息对象
     if (typeof message === 'object' && message.mcp && message.mcp.tool) {
       userMessage = message.mcp.tool.description
       parameters = message.mcp.tool.parameters || {}
     }
 
-    // 构建完整消息，包含参数信息
     let fullMessage = userMessage
     if (Object.keys(parameters).length > 0) {
       const paramsStr = JSON.stringify(parameters)
@@ -99,7 +78,6 @@ class AIHelper {
 
     let boardContext = moves.join('\n')
 
-    // 收集棋局元信息（从根节点获取）
     let gameInfo = ''
     let rootNode = tree.root
     if (rootNode && rootNode.data) {
@@ -120,10 +98,8 @@ class AIHelper {
       }
     }
 
-    // 获取可用的MCP工具列表
     let availableTools = mcpHelper.getAvailableEndpoints()
 
-    // 构建工具信息提示，包含参数要求
     let toolsInfo = availableTools
       .map(
         tool => `
@@ -135,7 +111,6 @@ class AIHelper {
       )
       .join('')
 
-    // 获取选中的服务提供商
     const provider = getSelectedServiceProvider()
     console.log('Selected LLM provider:', provider)
 
@@ -150,7 +125,7 @@ class AIHelper {
       '{"mcp":{"tool":{"name":"工具名称","description":"工具描述","parameters":{参数对象}}}}' +
       '\n' +
       '你可以使用以下MCP工具:\n'
-    // 使用llm-service-provider的流式生成功能
+
     let prompt =
       pre_prompt +
       toolsInfo +
@@ -163,28 +138,13 @@ class AIHelper {
       fullMessage
 
     const generator = streamDefinition(prompt, 'zh')
-    // console.log('Prompt:', pre_prompt)
+
     console.log('message:', fullMessage)
     let result = ''
     for await (const chunk of generator) {
       result += chunk
     }
-
-    // // 如果是json_object格式，需要从content中解析出实际内容
-    // if (
-    //   typeof result === 'string' &&
-    //   result.startsWith('{') &&
-    //   result.endsWith('}')
-    // ) {
-    //   try {
-    //     let parsed = JSON.parse(result)
-    //     if (parsed.content) result = parsed.content
-    //   } catch (e) {
-    //     // 如果解析失败，保持原内容不变
-    //   }
-    // }
-
-    // 检查响应是否包含MCP工具调用
+    console.log('raw response:', result)
     let parsedResponse = JSON.parse(result.replace(/```json|```/g, ''))
     if (parsedResponse.mcp && parsedResponse.mcp.tool) {
       let content = `${provider}: ${parsedResponse.mcp.tool.description}`
@@ -193,7 +153,6 @@ class AIHelper {
         sabaki.aiManager.addAIMessage(content)
       }
 
-      // 处理MCP工具调用
       let toolResult = await mcpHelper.handleMCPRequest(
         parsedResponse,
         gameContext
@@ -203,20 +162,17 @@ class AIHelper {
         return {content: `工具调用失败: ${toolResult.error}`}
       }
 
-      // 将工具结果传递给AI进行总结
       return await this.sendToolResultToAI(
         message,
         toolResult.data,
         gameContext
       )
     } else if (parsedResponse.response) {
-      // 如果响应包含response属性，使用该属性的值
       return {
         content: parsedResponse.response.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
       }
     }
 
-    // 移除Markdown格式并返回内容
     return {
       content: (typeof result === 'string' ? result : String(result)).replace(
         /\*{1,3}(.*?)\*{1,3}/g,
@@ -225,23 +181,14 @@ class AIHelper {
     }
   }
 
-  /**
-   * 将工具执行结果传递给AI进行总结
-   * @param {string} originalMessage - 用户原始消息
-   * @param {Object} toolResult - 工具执行结果
-   * @param {Object} gameContext - 游戏上下文信息
-   * @returns {Promise<Object>} AI总结响应
-   */
   async sendToolResultToAI(originalMessage, toolResult, gameContext) {
     try {
-      // 构建发送给AI的提示文本
       let prompt = `请总结以下工具执行结果，并以自然友好的语言回答用户的原始问题。
 
 用户原始问题: ${originalMessage}
 
 工具执行结果: ${JSON.stringify(toolResult, null, 2)}`
 
-      // 使用sendLLMMessage方法替代直接调用DeepSeek API
       let response = await this.sendLLMMessage(prompt, gameContext)
       return response
     } catch (err) {
@@ -249,22 +196,13 @@ class AIHelper {
     }
   }
 
-  /**
-   * 直接调用MCP工具
-   * @param {string} toolId - 工具ID
-   * @param {Object} params - 工具参数
-   * @param {Object} gameContext - 游戏上下文信息
-   * @returns {Promise<Object>} 工具执行结果
-   */
   async callMCPTool(toolId, params, gameContext) {
     try {
-      // 生成MCP消息
       let mcpMessage = mcpHelper.generateMCPMessage(toolId, params)
       if (mcpMessage.error) {
         return mcpMessage
       }
 
-      // 处理MCP请求
       return await mcpHelper.handleMCPRequest(mcpMessage, gameContext)
     } catch (err) {
       return {error: err.message}

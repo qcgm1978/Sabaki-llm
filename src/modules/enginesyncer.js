@@ -23,7 +23,11 @@ function parseVertex(coord, size) {
   if (coord == null || coord === 'resign') return null
   if (coord === 'pass') return [-1, -1]
 
-  let x = alpha.indexOf(coord[0].toUpperCase())
+  let letter = coord[0].toUpperCase()
+  let x = letter.charCodeAt(0) - 'A'.charCodeAt(0)
+  // 跳过字母'I'的处理
+  if (letter > 'I') x--
+
   let y = size - +coord.slice(1)
 
   return [x, y]

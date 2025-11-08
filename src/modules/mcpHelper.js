@@ -264,14 +264,10 @@ class MCPHelper {
         parameters = {
           type: 'object',
           properties: {
-            moves: {
-              type: 'array',
+            position: {
+              type: 'string',
               description:
-                '着法列表，格式为[颜色,位置,颜色,位置,...]，如["B","A1","W","B1"]',
-              items: {
-                type: 'string'
-              },
-              default: []
+                '空格分隔的颜色-顶点对序列，如 "B a1 W b1" (顶点坐标使用小写字母)'
             }
           }
         }
@@ -682,6 +678,8 @@ class MCPHelper {
           params.value !== undefined
         ) {
           commandArgs = [params.param, params.value.toString()]
+        } else if (cmd.id === 'set_position' && params.position) {
+          commandArgs = params.position.split(' ')
         }
 
         return await this.handleGTPCommand(cmd.name, commandArgs, gameContext)
