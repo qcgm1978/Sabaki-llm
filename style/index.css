@@ -1,5 +1,10 @@
 @import url('../node_modules/@sabaki/shudan/css/goban.css');
 
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 #mainlayout {
   position: absolute;
   left: 0;
