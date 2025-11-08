@@ -1,6 +1,19 @@
 ::marker {
     font-style: normal;
 }
+
+.drawer-input-horizontal {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.drawer-input-horizontal button {
+  height: 100%;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .ai-chat-drawer {
   display: flex;
   flex-direction: column;

@@ -512,13 +512,14 @@ export default class AIChatDrawer extends Drawer {
       ),
       h(
         'div',
-        {class: 'drawer-input'},
+        {class: 'drawer-input-horizontal'},
         h('textarea', {
           value: this.state.input,
           onChange: this.handleInputChange,
           onKeyDown: this.handleKeyDown,
           placeholder: t('Type your message...'),
-          disabled: this.state.sending
+          disabled: this.state.sending,
+          style: {flex: 1, marginRight: '8px'}
         }),
         h(
           'button',
