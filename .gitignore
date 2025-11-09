@@ -2,6 +2,7 @@ dist/
 i18n/
 engines/
 node_modules/
+docs/
 
 *bundle.js*
 bundle.js.LICENSE.txt
@@ -19,6 +20,7 @@ src/modules/ui.js
 src/modules/viewManager.js
 
 my.txt
+mcp.txt
 xiuxing.sgf
 
 .DS_Store
