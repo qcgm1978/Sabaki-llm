@@ -1,6 +1,5 @@
 import {h, Component} from 'preact'
 import i18n from '../i18n.js'
-import sabaki from '../modules/sabaki.js'
 import {getLiveReports, syncGolaxyOrYikeLizban, golaxy} from './golaxy.js'
 
 const t = i18n.context('GolaxyLivePanel')
@@ -45,32 +44,35 @@ export default class GolaxyLivePanel extends Component {
     if (!this.state.selectedGame) return
 
     this.setState({isSyncing: true})
+    // 根据棋局是否结束决定is_live参数
+    const is_live = this.state.selectedGame.live_status === 1
+    const game_id = this.state.selectedGame.liveId
+
     // 同步游戏并获取SGF内容
-    await syncGolaxyOrYikeLizban([this.state.selectedGame.id], true)
-
-    // 获取SGF内容并加载到棋盘
-    const url = `${golaxy.golaxyLiveUrl}/${this.state.selectedGame.id}`
-    const sgfContent = await golaxy.getSgfByGolaxy(url)
-
-    if (sgfContent) {
-      await sabaki.loadContent(sgfContent, '.sgf')
-      sabaki.goToEnd()
-
-      // 开始实时同步
+    if (is_live) {
+      await syncGolaxyOrYikeLizban([game_id], is_live)
       const [, , , , RE, , totalMoves, lastMove] = golaxy.getPropsBySgfStr(
         sgfContent
       )
       if (RE === 'Unknown Result') {
-        golaxy.startSync(
-          this.state.selectedGame.id,
-          totalMoves,
-          lastMove,
-          this.state.selectedGame.pb,
-          this.state.selectedGame.pw
-        )
+        golaxy.startSync(game_id, totalMoves, lastMove, pb, pw)
       }
     }
-    this.setState({isSyncing: false})
+
+    // 获取SGF内容并加载到棋盘
+    else {
+      const url = `${golaxy.golaxyLiveUrl}/${game_id}`
+      const sgfContent = await golaxy.getSgfByGolaxy(url)
+
+      if (sgfContent) {
+        await golaxy.syncSgf(game_id, sgfContent)
+
+        // 只有直播中的棋局才开始实时同步
+        if (is_live) {
+        }
+      }
+      this.setState({isSyncing: false})
+    }
   }
 
   handleStopSync = () => {
@@ -174,15 +176,17 @@ export default class GolaxyLivePanel extends Component {
                 },
                 isSyncing ? '同步中...' : '同步到棋盘'
               ),
-              h(
-                'button',
-                {
-                  className: 'stop-sync-button',
-                  onClick: this.handleStopSync
-                },
-                '停止同步'
-              )
-            ]
+              // 只有直播中的棋局才显示停止同步按钮
+              selectedGame.live_status === 1 &&
+                h(
+                  'button',
+                  {
+                    className: 'stop-sync-button',
+                    onClick: this.handleStopSync
+                  },
+                  '停止同步'
+                )
+            ].filter(Boolean)
           : h(
               'button',
               {className: 'refresh-button', onClick: this.fetchLiveGames},

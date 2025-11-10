@@ -2,10 +2,9 @@ const u = {}
 const c = {}
 const SGF = require('@sabaki/sgf')
 const GoCommunicate = require('./go_communicate')
-let sabaki = null
 
-// 动态导入sabaki模块，避免循环依赖
-sabaki = require('../modules/sabaki')
+// 延迟导入sabaki模块，避免循环依赖
+let sabaki = null
 
 class Golaxy extends GoCommunicate {
   constructor(
@@ -174,7 +173,8 @@ class Golaxy extends GoCommunicate {
       const liveId = game.liveId
       return `${this.golaxyLiveUrl}/base/${liveId}?live_id=${liveId}&begin_move_num=0&end_move_num=${moveNum}`
     } else {
-      return `${this.engineGames}/report/null/${gameId}?game_id=${gameId}&start_move_num=0&end_move_num=${moveNum}`
+      // return `${this.engineGames}/report/null/${gameId}?game_id=${gameId}&start_move_num=0&end_move_num=${moveNum}`
+      return `${this.golaxyLiveUrl}/${gameId}`
     }
   }
   async syncGolaxyOrYikeLizban(
@@ -191,9 +191,10 @@ class Golaxy extends GoCommunicate {
       // }
       let s
       if (isGolaxy) {
-        const url = this.isLive
-          ? `${this.golaxyLiveUrl}/${gameId}`
-          : `${this.engineGames}/0086-18602481789/${gameId}?id=${gameId}`
+        const url = `${this.golaxyLiveUrl}/${gameId}`
+        // const url = this.isLive
+        //   ? `${this.golaxyLiveUrl}/${gameId}`
+        //   : `${this.engineGames}/0086-18602481789/${gameId}?id=${gameId}`
         s = await this.getSgfByGolaxy(url)
       } else {
         s = await this.getYikeSgfData(gameId, !isReport)
@@ -300,12 +301,70 @@ class Golaxy extends GoCommunicate {
   async syncSgf(gameId, sgfContent) {
     // 同步SGF到Sabaki应用中
     console.log(`同步游戏 ${gameId} 的SGF内容`)
-    if (sabaki) {
-      // 如果这是当前同步的游戏，更新棋盘
-      if (this.currentGameId === gameId) {
-        await sabaki.loadContent(sgfContent, '.sgf')
-        sabaki.goToEnd()
+
+    // 确保sabaki已加载 - 使用正确的导入方式获取实例
+    if (!sabaki) {
+      try {
+        // 动态导入sabaki模块 - 使用ES模块导入语法
+        const sabakiModule = await import('../modules/sabaki.js')
+        sabaki = sabakiModule.default
+        console.log('Sabaki模块已成功导入并获取实例')
+      } catch (importError) {
+        console.error('导入Sabaki模块失败:', importError)
+        // 尝试CommonJS导入作为备选方案
+        try {
+          sabaki = require('../modules/sabaki')
+          console.log('使用CommonJS导入Sabaki模块成功')
+        } catch (commonJsError) {
+          console.error('CommonJS导入也失败:', commonJsError)
+          return
+        }
       }
+    }
+
+    // 确保sabaki是正确的实例
+    if (!sabaki || typeof sabaki !== 'object') {
+      console.error('sabaki不是有效的对象')
+      return
+    }
+
+    try {
+      // 检查loadContent方法是否存在
+      if (typeof sabaki.loadContent === 'function') {
+        await sabaki.loadContent(sgfContent, '.sgf')
+
+        // 检查goToEnd方法是否存在
+        if (typeof sabaki.goToEnd === 'function') {
+          sabaki.goToEnd()
+        } else {
+          console.warn('sabaki.goToEnd方法不存在')
+        }
+      } else {
+        console.error('sabaki.loadContent方法不存在')
+        // 打印sabaki对象的方法，帮助调试
+        console.log(
+          'sabaki对象可用方法:',
+          Object.keys(sabaki).filter(key => typeof sabaki[key] === 'function')
+        )
+
+        // 尝试直接使用正确的方式导入
+        try {
+          const directSabaki = window.require
+            ? window.require('../modules/sabaki')
+            : null
+          if (directSabaki && typeof directSabaki.loadContent === 'function') {
+            console.log('尝试使用直接导入的sabaki实例')
+            await directSabaki.loadContent(sgfContent, '.sgf')
+            if (typeof directSabaki.goToEnd === 'function') {
+              directSabaki.goToEnd()
+            }
+          }
+        } catch (directError) {
+          console.error('直接导入尝试失败:', directError)
+        }
+      }
+    } catch (error) {
+      console.error('同步SGF失败:', error)
     }
   }
 
@@ -335,8 +394,14 @@ class Golaxy extends GoCommunicate {
 
           if (latestSgf) {
             // 加载最新的SGF并跳转到最后一手
-            await sabaki.loadContent(latestSgf, '.sgf')
-            sabaki.goToEnd()
+            if (sabaki && typeof sabaki.loadContent === 'function') {
+              await sabaki.loadContent(latestSgf, '.sgf')
+              if (typeof sabaki.goToEnd === 'function') {
+                sabaki.goToEnd()
+              }
+            } else {
+              console.error('无法加载SGF内容，sabaki对象或方法不可用')
+            }
 
             // 显示新着提示
             if (sabaki.flashInfoOverlay) {
