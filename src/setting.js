@@ -225,7 +225,7 @@ let defaults = {
   'view.fuzzy_stone_placement': true,
   'view.leftsidebar_width': 250,
   'view.leftsidebar_minwidth': 100,
-  'view.peerlist_height': 130,
+  'view.peerlist_height': 60,
   'view.peerlist_minheight': 58,
   'view.properties_height': 50,
   'view.properties_minheight': 20,
