@@ -1436,3 +1436,6 @@ header {
 .shudan-vertex .shudan-heat {
   transition: none;
 }
+.split-container {
+  overflow: scroll;
+}
