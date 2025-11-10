@@ -9,19 +9,28 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
   background: #111;
 }
 
-body, input, button, select, option, textarea {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ubuntu, Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+body,
+input,
+button,
+select,
+option,
+textarea {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Ubuntu, Roboto,
+    Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol';
   font-size: 14px;
   line-height: 1.5;
 }
 
-body, a {
+body,
+a {
   cursor: default;
   overflow: hidden;
   /* user-select: none;
@@ -30,7 +39,8 @@ body, a {
   -webkit-user-select: none; */
 }
 
-pre, code {
+pre,
+code {
   font-family: Consolas, Menlo, Monaco, 'Ubuntu Mono', monospace;
   line-height: 1.3;
 }
@@ -43,13 +53,45 @@ pre, code {
   bottom: 0;
 }
 
+.tab-container {
+  display: flex;
+  height: 50px;
+  background-color: #1a1a1a;
+  border-bottom: 1px solid #333;
+  padding: 4px;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 8px 12px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #eee;
+  font-size: 14px;
+  cursor: default;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.tab-button:hover {
+  background-color: #2a2a2a;
+}
+
+.tab-button.active {
+  background-color: #333;
+  border-color: #444;
+  color: #fff;
+}
+
 h2 {
   font-size: 1.7em;
   font-weight: normal;
   text-transform: lowercase;
 }
 
-a, img {
+a,
+img {
   user-drag: none;
   -webkit-user-drag: none;
   object-fit: contain;
@@ -71,110 +113,122 @@ img {
 }
 
 #input-box {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 999;
-    pointer-events: none;
-  }
-  #input-box .inner {
-    position: absolute;
-    margin-left: -205px;
-    top: 0;
-    left: 50%;
-    width: 400px;
-    padding: 5px;
-    background: rgba(38, 41, 44, .97);
-    color: #eee;
-    transform: translateY(-100%);
-    transition: transform .1s;
-  }
-  #input-box.show {
-    pointer-events: auto;
-  }
-  #input-box.show .inner {
-    transform: translateY(0);
-    box-shadow: 0 0 10px rgba(0, 0, 0, .5);
-  }
-  #input-box input {
-    box-sizing: border-box;
-    background: #111;
-    color: #eee;
-    width: 100%;
-  }
-  #input-box input:focus {
-    background: #1a1a1a;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  pointer-events: none;
+}
+#input-box .inner {
+  position: absolute;
+  margin-left: -205px;
+  top: 0;
+  left: 50%;
+  width: 400px;
+  padding: 5px;
+  background: rgba(38, 41, 44, 0.97);
+  color: #eee;
+  transform: translateY(-100%);
+  transition: transform 0.1s;
+}
+#input-box.show {
+  pointer-events: auto;
+}
+#input-box.show .inner {
+  transform: translateY(0);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+#input-box input {
+  box-sizing: border-box;
+  background: #111;
+  color: #eee;
+  width: 100%;
+}
+#input-box input:focus {
+  background: #1a1a1a;
 }
 
-form p, form ul li {
-    margin-bottom: 7px;
-  }
-  form ul {
-    list-style: none;
-  }
-  input[type="text"] {
-    width: 125px;
-  }
-  textarea {
-    resize: none;
-  }
-  input[type="checkbox"] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    -ms-appearance: none;
-    display: inline-block;
-    position: relative;
-    height: 1.5em;
-    width: 1.5em;
-    margin-right: 5px;
-    vertical-align: text-bottom;
-  }
-  input[type="checkbox"]::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('../node_modules/@primer/octicons/build/svg/check.svg') center / auto 16px no-repeat;
-    opacity: 0;
-  }
-  input[type="checkbox"]:checked::before {
-    opacity: 1;
-  }
-  input, button, select, textarea {
-    border: 0;
-    padding: 5px 10px;
-  }
-  button {
-    padding: 5px 20px;
-  }
-  button.dropdown {
-    position: relative;
-    padding-right: 42px;
-  }
-  button.dropdown::after {
-    content: '';
-    display: block;
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    right: 20px;
-    top: 50%;
-    margin-top: -8px;
-    background: url('../node_modules/@primer/octicons/build/svg/chevron-down.svg') center / auto 16px no-repeat;
-    filter: invert(100%);
-  }
-  input:focus, button:focus, select:focus, textarea:focus {
-    outline: none;
-  }
-  input:disabled, select:disabled, button:disabled, textarea:disabled {
-    opacity: .5;
-  }
-  form > p:last-child {
-    text-align: right;
+form p,
+form ul li {
+  margin-bottom: 7px;
+}
+form ul {
+  list-style: none;
+}
+input[type='text'] {
+  width: 125px;
+}
+textarea {
+  resize: none;
+}
+input[type='checkbox'] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  -ms-appearance: none;
+  display: inline-block;
+  position: relative;
+  height: 1.5em;
+  width: 1.5em;
+  margin-right: 5px;
+  vertical-align: text-bottom;
+}
+input[type='checkbox']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('../node_modules/@primer/octicons/build/svg/check.svg') center /
+    auto 16px no-repeat;
+  opacity: 0;
+}
+input[type='checkbox']:checked::before {
+  opacity: 1;
+}
+input,
+button,
+select,
+textarea {
+  border: 0;
+  padding: 5px 10px;
+}
+button {
+  padding: 5px 20px;
+}
+button.dropdown {
+  position: relative;
+  padding-right: 42px;
+}
+button.dropdown::after {
+  content: '';
+  display: block;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  right: 20px;
+  top: 50%;
+  margin-top: -8px;
+  background: url('../node_modules/@primer/octicons/build/svg/chevron-down.svg')
+    center / auto 16px no-repeat;
+  filter: invert(100%);
+}
+input:focus,
+button:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+input:disabled,
+select:disabled,
+button:disabled,
+textarea:disabled {
+  opacity: 0.5;
+}
+form > p:last-child {
+  text-align: right;
 }
 
 /**
@@ -261,18 +315,18 @@ form p, form ul li {
  */
 
 ::-webkit-scrollbar {
-    height: 8px;
-    width: 8px;
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #393939;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #494949;
-  }
-  ::-webkit-scrollbar-corner {
-    background: transparent;
+  height: 8px;
+  width: 8px;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #393939;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #494949;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /**
@@ -285,8 +339,8 @@ form p, form ul li {
   background: #111;
   border: none;
   font-family: inherit;
-  box-shadow: 0 -5px 15px rgba(0,0,0,.5);
-  transition: left .2s, top .2s;
+  box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5);
+  transition: left 0.2s, top 0.2s;
 }
 
 .pika-label {
@@ -301,17 +355,18 @@ form p, form ul li {
   cursor: default;
 }
 
-.pika-prev, .pika-next {
-    background-size: auto 16px;
-    cursor: default;
-    filter: invert(100%);
-    -webkit-filter: invert(100%);
-  }
-  .pika-prev {
-    background-image: url('../node_modules/@primer/octicons/build/svg/chevron-left.svg');
-  }
-  .pika-next {
-    background-image: url('../node_modules/@primer/octicons/build/svg/chevron-right.svg');
+.pika-prev,
+.pika-next {
+  background-size: auto 16px;
+  cursor: default;
+  filter: invert(100%);
+  -webkit-filter: invert(100%);
+}
+.pika-prev {
+  background-image: url('../node_modules/@primer/octicons/build/svg/chevron-left.svg');
+}
+.pika-next {
+  background-image: url('../node_modules/@primer/octicons/build/svg/chevron-right.svg');
 }
 
 .pika-table th {
@@ -320,15 +375,19 @@ form p, form ul li {
 }
 
 .pika-button {
-    cursor: default;
-    color: white;
-    background: #1a1a1a;
-  }
-  .pika-button:active, .pika-prev:active, .pika-next:active {
-    position: static;
+  cursor: default;
+  color: white;
+  background: #1a1a1a;
+}
+.pika-button:active,
+.pika-prev:active,
+.pika-next:active {
+  position: static;
 }
 
-.pika-week { color: #999; }
+.pika-week {
+  color: #999;
+}
 
 .is-selected .pika-button {
   color: #fff;
@@ -338,7 +397,9 @@ form p, form ul li {
   border-radius: 0;
 }
 
-.is-today .pika-button { color: #F75644; }
+.is-today .pika-button {
+  color: #f75644;
+}
 
 .pika-button:hover {
   color: #fff;
@@ -348,10 +409,12 @@ form p, form ul li {
 
 .is-multi-selected .pika-button {
   color: #fff;
-  background: #0050C0;
+  background: #0050c0;
 }
 
-.is-today .pika-button { font-weight: bold; }
+.is-today .pika-button {
+  font-weight: bold;
+}
 
 .pika-table abbr {
   cursor: default;

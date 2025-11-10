@@ -4,6 +4,7 @@ import {h, Component} from 'preact'
 import SplitContainer from './helpers/SplitContainer.js'
 import GtpConsole from './sidebars/GtpConsole.js'
 import {EnginePeerList} from './sidebars/PeerList.js'
+import GolaxyLivePanel from './GolaxyLivePanel.js'
 
 const setting = remote.require('./setting')
 const peerListMinHeight = setting.get('view.peerlist_minheight')
@@ -14,7 +15,12 @@ export default class LeftSidebar extends Component {
 
     this.state = {
       peerListHeight: setting.get('view.peerlist_height'),
-      selectedEngineSyncerId: null
+      selectedEngineSyncerId: null,
+      activeTab: 'engine' // 'engine' or 'golaxy'
+    }
+
+    this.handleTabChange = tab => {
+      this.setState({activeTab: tab})
     }
 
     this.handlePeerListHeightChange = ({sideSize}) => {
@@ -80,7 +86,7 @@ export default class LeftSidebar extends Component {
       showLeftSidebar,
       consoleLog
     },
-    {peerListHeight, selectedEngineSyncerId}
+    {peerListHeight, selectedEngineSyncerId, activeTab}
   ) {
     return h(
       'section',
@@ -88,46 +94,68 @@ export default class LeftSidebar extends Component {
         ref: el => (this.element = el),
         id: 'leftsidebar'
       },
+      [
+        h('div', {className: 'tab-container'}, [
+          h(
+            'button',
+            {
+              className: `tab-button ${activeTab === 'engine' ? 'active' : ''}`,
+              onClick: () => this.handleTabChange('engine')
+            },
+            '引擎'
+          ),
+          h(
+            'button',
+            {
+              className: `tab-button ${activeTab === 'golaxy' ? 'active' : ''}`,
+              onClick: () => this.handleTabChange('golaxy')
+            },
+            'Golaxy直播'
+          )
+        ]),
 
-      h(SplitContainer, {
-        vertical: true,
-        invert: true,
-        sideSize: peerListHeight,
+        activeTab === 'engine'
+          ? h(SplitContainer, {
+              vertical: true,
+              invert: true,
+              sideSize: peerListHeight,
 
-        sideContent: h(EnginePeerList, {
-          attachedEngineSyncers,
-          analyzingEngineSyncerId,
-          blackEngineSyncerId,
-          whiteEngineSyncerId,
-          selectedEngineSyncerId,
-          engineGameOngoing,
+              sideContent: h(EnginePeerList, {
+                attachedEngineSyncers,
+                analyzingEngineSyncerId,
+                blackEngineSyncerId,
+                whiteEngineSyncerId,
+                selectedEngineSyncerId,
+                engineGameOngoing,
 
-          onEngineSelect: this.handleEngineSelect
-        }),
+                onEngineSelect: this.handleEngineSelect
+              }),
 
-        mainContent: h(GtpConsole, {
-          show: showLeftSidebar,
-          consoleLog,
-          attachedEngine: attachedEngineSyncers
-            .map(syncer =>
-              syncer.id !== selectedEngineSyncerId
-                ? null
-                : {
-                    name: syncer.engine.name,
-                    get commands() {
-                      return syncer.commands
-                    }
-                  }
-            )
-            .find(x => x != null),
+              mainContent: h(GtpConsole, {
+                show: showLeftSidebar,
+                consoleLog,
+                attachedEngine: attachedEngineSyncers
+                  .map(syncer =>
+                    syncer.id !== selectedEngineSyncerId
+                      ? null
+                      : {
+                          name: syncer.engine.name,
+                          get commands() {
+                            return syncer.commands
+                          }
+                        }
+                  )
+                  .find(x => x != null),
 
-          onSubmit: this.handleCommandSubmit,
-          onControlStep: this.handleCommandControlStep
-        }),
+                onSubmit: this.handleCommandSubmit,
+                onControlStep: this.handleCommandControlStep
+              }),
 
-        onChange: this.handlePeerListHeightChange,
-        onFinish: this.handlePeerListHeightFinish
-      })
+              onChange: this.handlePeerListHeightChange,
+              onFinish: this.handlePeerListHeightFinish
+            })
+          : h(GolaxyLivePanel, {})
+      ]
     )
   }
 }

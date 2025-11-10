@@ -1,0 +1,170 @@
+.golaxy-live-panel {
+  height: 100%;
+  overflow: scroll;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.golaxy-live-panel .panel-header {
+  margin-bottom: 15px;
+}
+
+.golaxy-live-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.golaxy-live-panel .search-form {
+  display: flex;
+  gap: 5px;
+}
+
+.golaxy-live-panel .search-input {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.golaxy-live-panel .search-button {
+  padding: 5px 12px;
+  background-color: #4a9eff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.golaxy-live-panel .search-button:hover {
+  background-color: #3a8eef;
+}
+
+.golaxy-live-panel .loading,
+.golaxy-live-panel .no-games {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.golaxy-live-panel .games-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 15px;
+  color: white;
+}
+
+.golaxy-live-panel .game-item {
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.golaxy-live-panel .game-item:hover {
+  background-color: #f5f5f5;
+}
+
+.golaxy-live-panel .game-item.selected {
+  background-color: #e3f2fd;
+  border-color: #4a9eff;
+}
+
+.golaxy-live-panel .game-title {
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 15px;
+}
+
+.golaxy-live-panel .players {
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.golaxy-live-panel .black-player {
+  color: #333;
+  font-weight: 500;
+}
+
+.golaxy-live-panel .white-player {
+  color: #666;
+  font-weight: 500;
+}
+
+.golaxy-live-panel .game-status {
+  font-size: 13px;
+  color: #666;
+}
+
+.golaxy-live-panel .live-indicator {
+  color: #e53935;
+  font-weight: 600;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.golaxy-live-panel .action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.golaxy-live-panel .sync-button,
+.golaxy-live-panel .refresh-button,
+.golaxy-live-panel .stop-sync-button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.golaxy-live-panel .sync-button {
+  background-color: #4caf50;
+  color: white;
+}
+
+.golaxy-live-panel .sync-button:hover:not(:disabled) {
+  background-color: #3d8b40;
+}
+
+.golaxy-live-panel .sync-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.golaxy-live-panel .stop-sync-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.golaxy-live-panel .stop-sync-button:hover {
+  background-color: #d32f2f;
+}
+
+.golaxy-live-panel .refresh-button {
+  background-color: #4a9eff;
+  color: white;
+}
+
+.golaxy-live-panel .refresh-button:hover {
+  background-color: #3a8eef;
+}

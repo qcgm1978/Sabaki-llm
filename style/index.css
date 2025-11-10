@@ -311,7 +311,7 @@ header {
 
 #leftsidebar {
     display: grid;
-    grid-template: 100% / 100%;
+    /* grid-template: 100% / 100%; */
     background: #111;
     visibility: hidden;
     z-index: 10;
