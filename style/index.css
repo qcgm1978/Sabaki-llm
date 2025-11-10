@@ -728,7 +728,8 @@ header {
   }
   .drawer input:focus, .drawer textarea:focus, .drawer select:focus,
   button:hover:not([class^="pika-"]), button:focus:not([class^="pika-"]) {
-    background: #1a1a1a;
+    background: linear-gradient(rgba(25, 118, 210, 0.3), rgba(25, 118, 210, 0.3)),
+    #e3f2fd;
   }
   button:active {
     position: relative;
