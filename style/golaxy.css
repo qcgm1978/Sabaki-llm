@@ -41,7 +41,8 @@
 }
 
 .golaxy-live-panel .search-button:hover {
-  background-color: #3a8eef;
+  background: linear-gradient(rgba(25, 118, 210, 0.3), rgba(25, 118, 210, 0.3)),
+    #e3f2fd;
 }
 
 .golaxy-live-panel .loading,
@@ -68,11 +69,13 @@
 }
 
 .golaxy-live-panel .game-item:hover {
-  background-color: #f5f5f5;
+  background: linear-gradient(rgba(25, 118, 210, 0.3), rgba(25, 118, 210, 0.3)),
+    #e3f2fd;
 }
 
 .golaxy-live-panel .game-item.selected {
-  background-color: #e3f2fd;
+  background: linear-gradient(rgba(25, 118, 210, 0.3), rgba(25, 118, 210, 0.3)),
+    #e3f2fd;
   border-color: #4a9eff;
 }
 
@@ -88,12 +91,10 @@
 }
 
 .golaxy-live-panel .black-player {
-  color: #333;
   font-weight: 500;
 }
 
 .golaxy-live-panel .white-player {
-  color: #666;
   font-weight: 500;
 }
 

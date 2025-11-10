@@ -65,8 +65,8 @@ export default class GolaxyLivePanel extends Component {
           this.state.selectedGame.id,
           totalMoves,
           lastMove,
-          this.state.selectedGame.black_player,
-          this.state.selectedGame.white_player
+          this.state.selectedGame.pb,
+          this.state.selectedGame.pw
         )
       }
     }
@@ -129,17 +129,9 @@ export default class GolaxyLivePanel extends Component {
                           game.name || '未命名对局'
                         ),
                         h('div', {className: 'players'}, [
-                          h(
-                            'span',
-                            {className: 'black-player'},
-                            game.black_player
-                          ),
+                          h('span', {className: 'black-player'}, game.pb),
                           h('span', {}, ' vs '),
-                          h(
-                            'span',
-                            {className: 'white-player'},
-                            game.white_player
-                          )
+                          h('span', {className: 'white-player'}, game.pw)
                         ]),
                         h(
                           'div',
@@ -148,8 +140,8 @@ export default class GolaxyLivePanel extends Component {
                             h(
                               'span',
                               {},
-                              game.move_num
-                                ? '第 ' + game.move_num + ' 手'
+                              game.moveNum
+                                ? '第 ' + game.moveNum + ' 手'
                                 : '未开始'
                             ),
                             game.live_status === 1 &&
