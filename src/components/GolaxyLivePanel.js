@@ -140,16 +140,19 @@ export default class GolaxyLivePanel extends Component {
                             h(
                               'span',
                               {},
-                              game.moveNum
-                                ? '第 ' + game.moveNum + ' 手'
-                                : '未开始'
+                              '第 ' + (game.moveNum ? game.moveNum : 0) + ' 手'
                             ),
-                            game.live_status === 1 &&
-                              h(
-                                'span',
-                                {className: 'live-indicator'},
-                                ' 直播中'
-                              )
+                            game.live_status === 1
+                              ? h(
+                                  'span',
+                                  {className: 'live-indicator'},
+                                  '(直播中)'
+                                )
+                              : h(
+                                  'span',
+                                  {className: ''},
+                                  `(${game.gameResult})`
+                                )
                           ].filter(Boolean)
                         )
                       ])
