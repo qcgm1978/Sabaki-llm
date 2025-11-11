@@ -18,14 +18,14 @@ module.exports = {
     "Download Update": "下载更新",
     "View Changelog": "查看更新日志",
     "Not Now": "稍后",
-    "${appName} v${version} is available now.": "${appName} v${version} 现已可用。",
+    "${appName} v${version} is available now.": p => `${p.appName} v${p.version} 现已可用。`,
     "OK": "确定",
     "No updates available": "没有可用更新",
-    "${appName} v${version} is the latest version.": "${appName} v${version} 是最新版本。"
+    "${appName} v${version} is the latest version.": p => `${p.appName} v${p.version} 是最新版本。`
   },
   "exception": {
-    "${appName} v${version}": "${appName} v${version}",
-    "Something weird happened. ${appName} will shut itself down. If possible, please report this on ${appName}’s repository on GitHub.": "发生了奇怪的事情。${appName} 将自行关闭。如果可能，请在GitHub上的${appName}代码库中报告此问题。"
+    "${appName} v${version}": p => `${p.appName} v${p.version}`,
+    "Something weird happened. ${appName} will shut itself down. If possible, please report this on ${appName}’s repository on GitHub.": p => `发生了奇怪的事情。${p.appName} 将自行关闭。如果可能，请在GitHub上的${p.appName}代码库中报告此问题。`
   },
   "menu.play": {
     "Play": "对局",
@@ -144,7 +144,7 @@ module.exports = {
   },
   "menu.help": {
     "Help": "帮助",
-    "${appName} v${version}": "${appName} v${version}",
+    "${appName} v${version}": p => `${p.appName} v${p.version}`,
     "Check for Updates": "检查更新",
     "GitHub Repository": "GitHub代码库",
     "Report Issue": "报告问题"
@@ -212,7 +212,7 @@ module.exports = {
   },
   "EngineSyncer": {
     "GTP engines don’t support invalid board positions.": "GTP引擎不支持无效的棋盘位置。",
-    "GTP engines only support board sizes that don’t exceed ${length}.": "GTP引擎仅支持不超过${length}的棋盘大小。",
+    "GTP engines only support board sizes that don't exceed ${length}.": p => `GTP引擎仅支持不超过${p.length}的棋盘大小。`,
     "Current board arrangement can’t be recreated on the GTP engine.": "当前棋盘排列无法在GTP引擎上重建。",
     "GTP engine can’t be synced to current state.": "GTP引擎无法同步到当前状态。"
   },
@@ -220,7 +220,7 @@ module.exports = {
     "You have an invalid log folder for GTP console logging in your settings.\n\nPlease make sure the log directory is valid and writable, or disable GTP console logging.": "您的设置中的GTP控制台日志文件夹无效。\n\n请确保日志目录有效且可写入，或者禁用GTP控制台日志。"
   },
   "sabaki.window": {
-    "Game ${gameNumber}": "棋局 ${gameNumber}"
+    "Game ${gameNumber}": p => `棋局 ${p.gameNumber}`
   },
   "sabaki.file": {
     "All Files": "所有文件",
@@ -229,7 +229,7 @@ module.exports = {
     "Save": "保存",
     "Don’t Save": "不保存",
     "Cancel": "取消",
-    "This file has been changed outside of ${appName}.\nDo you want to reload the file? Your changes will be lost.": "此文件已在${appName}外部被更改。\n是否要重新加载文件？您的更改将会丢失。",
+    "This file has been changed outside of ${appName}.\nDo you want to reload the file? Your changes will be lost.": p => `此文件已在${p.appName}外部被更改。\n是否要重新加载文件？您的更改将会丢失。`,
     "Reload": "重新加载",
     "Don’t Reload": "不重新加载"
   },
@@ -243,8 +243,8 @@ module.exports = {
   },
   "sabaki.engine": {
     "Connection Failed": "连接失败",
-    "${engine} has failed to generate a move.": "${engine} 生成着法失败。",
-    "${engine} has resigned.": "${engine} 已认输。",
+    "${engine} has failed to generate a move.": p => `${p.engine} 生成着法失败。`,
+    "${engine} has resigned.": p => `${p.engine} 已认输。`,
     "Please attach one or more engines first.": "请先附加一个或多个引擎。",
     "The selected engine does not support analysis.": "选中的引擎不支持分析。"
   },
@@ -421,13 +421,13 @@ module.exports = {
     "Komi": "贴目",
     "Handicap": "让子",
     "No stones": "无子",
-    "${stones} stones": "${stones}子",
+    "${stones} stones": p => `${p.stones}子`,
     "Board Size": "棋盘大小",
     "OK": "确定",
     "Cancel": "取消"
   },
   "PreferencesDrawer": {
-    "Please restart ${appName} to apply your language setting.": "请重启${appName}以应用您的语言设置。",
+    "Please restart ${appName} to apply your language setting.": "请重启应用以应用您的语言设置。",
     "Enable hardware acceleration if possible": "尽可能启用硬件加速",
     "Check for updates at startup": "启动时检查更新",
     "Enable sounds": "启用声音",
@@ -471,7 +471,7 @@ module.exports = {
     "Default": "默认",
     "Install Theme…": "安装主题…",
     "Get more themes…": "获取更多主题…",
-    "by ${author}": "作者：${author}",
+    "by ${author}": p => `作者：${p.author}`,
     "Homepage": "主页",
     "All Files": "所有文件",
     "Remove": "移除",
@@ -502,8 +502,8 @@ module.exports = {
     "Close": "关闭"
   },
   "CommentBox": {
-    "Result: ${result}": "结果：${result}",
-    "${a}-${b} Point": "${a}-${b}点",
+    "Result: ${result}": p => `结果：${p.result}`,
+    "${a}-${b} Point": p => `${p.a}-${p.b}点`,
     "View article on Sensei's Library": "在Sensei的围棋图书馆查看文章",
     "Bad move": "坏着",
     "Very bad move": "非常坏的着法",
