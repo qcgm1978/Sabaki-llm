@@ -41,6 +41,8 @@ class GoCommunicate {
           this.playerBlack,
           this.playerWhite
         )
+      } else {
+        clearInterval(this.requestTimer)
       }
     }, this.requestInterval)
   }

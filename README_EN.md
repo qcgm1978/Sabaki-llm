@@ -5,16 +5,16 @@
 ## Core Features
 
 This project is built on the Sabaki Go interface, integrating advanced AI
-features and Galaxy Go platform integration to create a comprehensive Go
+features and golaxy Go platform integration to create a comprehensive Go
 assistant:
 
-### Galaxy Go Platform Integration
+### golaxy Go Platform Integration
 
-- Real-time synchronization with Galaxy Go platform games
+- Real-time synchronization with golaxy Go platform games
 - Support for online gameplay and spectating
 - Rich display of Go game data
 - Real-time updates and synchronization of game information
-- User-friendly interface for managing Galaxy-related features
+- User-friendly interface for managing golaxy-related features
 
 ### MCP (Model Context Protocol) Integration
 
@@ -51,7 +51,7 @@ assistant:
   two
 - Delivers both professional and easily understandable Go analysis experience
   for users
-- Galaxy integration provides online gameplay and community functionality
+- golaxy integration provides online gameplay and community functionality
   support
 
 ![Screenshot](screenshot-llm.png)

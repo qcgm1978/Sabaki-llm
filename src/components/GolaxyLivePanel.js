@@ -12,7 +12,9 @@ export default class GolaxyLivePanel extends Component {
       searchQuery: '',
       isLoading: false,
       selectedGame: null,
-      isSyncing: false
+      isSyncing: false,
+      syncingGameId: null,
+      lastMove: null
     }
   }
 
@@ -48,6 +50,8 @@ export default class GolaxyLivePanel extends Component {
     const is_live = this.state.selectedGame.liveStatus === 0
     const game_id = this.state.selectedGame.liveId
 
+    this.setState({syncingGameId: game_id})
+
     // 同步游戏并获取SGF内容
     if (is_live) {
       await syncGolaxyOrYikeLizban([game_id], is_live)
@@ -61,6 +65,7 @@ export default class GolaxyLivePanel extends Component {
         totalMoves,
         lastMove
       ] = golaxy.getPropsBySgfStr(golaxy.sgf)
+      this.setState({lastMove})
       if (RE === 'Unknown Result') {
         golaxy.startSync(game_id, totalMoves, lastMove, PB, PW)
       }
@@ -85,6 +90,9 @@ export default class GolaxyLivePanel extends Component {
   handleStopSync = () => {
     golaxy.stopSync()
     this.setState({selectedGame: null})
+    this.setState({isSyncing: false})
+    this.setState({syncingGameId: null})
+    this.setState({lastMove: null})
   }
 
   render() {
@@ -155,7 +163,12 @@ export default class GolaxyLivePanel extends Component {
                               ? h(
                                   'span',
                                   {className: 'live-indicator'},
-                                  '(直播中)'
+                                  `(直播中${
+                                    this.state.syncingGameId === game.id &&
+                                    this.state.lastMove
+                                      ? `, 新着: ${this.state.lastMove}`
+                                      : ''
+                                  })`
                                 )
                               : h(
                                   'span',
@@ -189,14 +202,17 @@ export default class GolaxyLivePanel extends Component {
                   'button',
                   {
                     className: 'stop-sync-button',
-                    onClick: this.handleStopSync
+                    onClick: () => this.handleStopSync()
                   },
                   '停止同步'
                 )
             ].filter(Boolean)
           : h(
               'button',
-              {className: 'refresh-button', onClick: this.fetchLiveGames},
+              {
+                className: 'refresh-button',
+                onClick: () => this.fetchLiveGames()
+              },
               '刷新列表'
             )
       ])

@@ -181,6 +181,7 @@ class Golaxy extends GoCommunicate {
     requestAgain = false,
     isGolaxy = true
   ) {
+    let lastMove = null
     for (const gameId of gameIds) {
       // if (this.dGameId[gameId] && !requestAgain) {
       //     this.enableSyncSgf = true;
@@ -273,7 +274,23 @@ class Golaxy extends GoCommunicate {
     function traverse(node) {
       if (node.data) {
         const b_w = node.data.B || node.data.W
-        lastMove = b_w ? b_w[0] : null // 更新最后一步
+        if (b_w) {
+          const sgfCoord = b_w[0]
+          // 将SGF格式坐标(如me)转换为A1格式
+          if (sgfCoord.length >= 2) {
+            let y = sgfCoord.charCodeAt(0) - 'a'.charCodeAt(0)
+            let x = sgfCoord.charCodeAt(1) - 'a'.charCodeAt(0)
+            if (y > 7) {
+              y -= 1
+            }
+            if (x > 7) {
+              x -= 1
+            }
+            lastMove = String.fromCharCode('A'.charCodeAt(0) + y) + (x + 1)
+          } else {
+            lastMove = sgfCoord
+          }
+        }
       }
       if (node.children) {
         for (const child of node.children) {
@@ -402,10 +419,9 @@ class Golaxy extends GoCommunicate {
               console.error('无法加载SGF内容，sabaki对象或方法不可用')
             }
 
-            // 显示新着提示
-            if (sabaki.flashInfoOverlay) {
-              sabaki.flashInfoOverlay(`新着: ${this.lastMove}`)
-            }
+            // 保存新着信息，将通过GolaxyLivePanel展示
+            lastMove = this.lastMove
+            console.log(`新着: ${lastMove}`)
           }
         }
       }
