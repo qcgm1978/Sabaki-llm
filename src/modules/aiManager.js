@@ -2,6 +2,7 @@ import * as remote from '@electron/remote'
 import i18n from '../i18n.js'
 import * as helper from './helper.js'
 import * as dialog from './dialog.js'
+const setting = remote.require('./setting')
 import aiHelper from './ai.js'
 import {ApiKeyManager} from 'llm-service-provider'
 
@@ -54,7 +55,7 @@ class AIManager {
                 },
                 showCloseButton: false,
                 onClose: handleClose,
-                language: i18n.locale === 'zh' ? 'zh' : 'en',
+                language: setting.get('app.lang') == 'zh-Hans' ? 'zh' : 'en',
                 styleVariant: 'default',
                 compactTemplate: true
               })
