@@ -34,8 +34,9 @@ jobs:
         npx rimraf ./dist/*.yml ./dist/*.yaml ./dist/*.blockmap
         # 安装ghr并确保它在PATH中可用
         go install github.com/tcnksm/ghr@latest
+        # 获取正确的GOPATH
+        GOPATH=$(go env GOPATH)
         # 使用正确的ghr路径
-        $(go env GOPATH)/bin/ghr -n "Sabaki v${{ steps.info.outputs.version }}" -prerelease ${{ steps.info.outputs.tag }} ./dist
+        $GOPATH/bin/ghr -n "Sabaki v${{ steps.info.outputs.version }}" -prerelease ${{ steps.info.outputs.tag }} ./dist
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GOPATH: ${{ steps.info.outputs.ci }}
