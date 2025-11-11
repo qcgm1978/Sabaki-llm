@@ -1,5 +1,3 @@
-const u = {}
-const c = {}
 const SGF = require('@sabaki/sgf')
 const GoCommunicate = require('./go_communicate')
 
@@ -12,7 +10,7 @@ class Golaxy extends GoCommunicate {
     today = new Date().toISOString().split('T')[0],
     isLive = true
   ) {
-    super(u, c)
+    super()
     this.golaxy_host = 'https://19x19.com'
     this.engine = `${this.golaxy_host}/api/engine`
     this.engineGames = `${this.engine}/games`
@@ -117,8 +115,8 @@ class Golaxy extends GoCommunicate {
     this.today = today
     if (this.today) {
       this.golaxyName = `${this.today}-golaxy`
-      this.golaxyAddress = `${u.resourcePath}${this.golaxyName}`
-      this.golaxyDataAddress = `${u.dataPath}${this.golaxyName}`
+      // this.golaxyAddress = `${u.resourcePath}${this.golaxyName}`
+      // this.golaxyDataAddress = `${u.dataPath}${this.golaxyName}`
     }
   }
 
@@ -295,6 +293,7 @@ class Golaxy extends GoCommunicate {
       return d
     }
     const sgf = d && d.data.sgf
+    this.sgf = sgf
     return sgf
   }
 
@@ -379,10 +378,10 @@ class Golaxy extends GoCommunicate {
     const data = await this.getGolaxyLive(gameId, lastMoveNum)
     if (data && data.length > 0) {
       const newMove = data[data.length - 1]
-      if (newMove.move_num > lastMoveNum) {
-        console.log(`发现新的一手: ${newMove.move_num}`)
-        this.lastMoveNum = newMove.move_num
-        this.lastMove = newMove.coord
+      if (newMove.moveNum > lastMoveNum) {
+        console.log(`发现新的一手: ${newMove.moveNum}`)
+        this.lastMoveNum = newMove.moveNum
+        this.lastMove = JSON.parse(newMove.data).coord
 
         // 实时更新棋盘
         if (sabaki) {

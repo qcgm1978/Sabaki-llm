@@ -6,7 +6,7 @@ class GoCommunicate {
     this.u = u
     this.c = c
     this.enableSyncSgf = false
-    this.requestInterval = 5000
+    this.requestInterval = 30000
     this.requestTimer = null
     this.lastMove = null
     this.currentGameId = null
@@ -56,9 +56,9 @@ class GoCommunicate {
     const data = await this.getGolaxyLive(gameId, lastMoveNum)
     if (data && data.length > 0) {
       const newMove = data[data.length - 1]
-      if (newMove.move_num > lastMoveNum) {
-        console.log(`发现新的一手: ${newMove.move_num}`)
-        this.lastMoveNum = newMove.move_num
+      if (newMove.moveNum > lastMoveNum) {
+        console.log(`发现新的一手: ${newMove.moveNum}`)
+        this.lastMoveNum = newMove.moveNum
         // 这里将在集成时更新棋盘
       }
     }

@@ -45,17 +45,24 @@ export default class GolaxyLivePanel extends Component {
 
     this.setState({isSyncing: true})
     // 根据棋局是否结束决定is_live参数
-    const is_live = this.state.selectedGame.live_status === 1
+    const is_live = this.state.selectedGame.liveStatus === 0
     const game_id = this.state.selectedGame.liveId
 
     // 同步游戏并获取SGF内容
     if (is_live) {
       await syncGolaxyOrYikeLizban([game_id], is_live)
-      const [, , , , RE, , totalMoves, lastMove] = golaxy.getPropsBySgfStr(
-        sgfContent
-      )
+      const [
+        game,
+        title,
+        PB,
+        PW,
+        RE,
+        DT,
+        totalMoves,
+        lastMove
+      ] = golaxy.getPropsBySgfStr(golaxy.sgf)
       if (RE === 'Unknown Result') {
-        golaxy.startSync(game_id, totalMoves, lastMove, pb, pw)
+        golaxy.startSync(game_id, totalMoves, lastMove, PB, PW)
       }
     }
 
@@ -144,7 +151,7 @@ export default class GolaxyLivePanel extends Component {
                               {},
                               '第 ' + (game.moveNum ? game.moveNum : 0) + ' 手'
                             ),
-                            game.live_status === 1
+                            game.liveStatus === 0
                               ? h(
                                   'span',
                                   {className: 'live-indicator'},
@@ -177,7 +184,7 @@ export default class GolaxyLivePanel extends Component {
                 isSyncing ? '同步中...' : '同步到棋盘'
               ),
               // 只有直播中的棋局才显示停止同步按钮
-              selectedGame.live_status === 1 &&
+              selectedGame.liveStatus === 0 &&
                 h(
                   'button',
                   {
