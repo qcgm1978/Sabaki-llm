@@ -252,6 +252,25 @@ form > p:last-child {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  margin-bottom: 15px;
+}
+
+.ai-chat-mcp-tool-select-group input {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #fff;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.ai-chat-mcp-tool-select-group input:focus {
+  outline: none;
+  border-color: #666;
+  box-shadow: 0 0 0 2px rgba(102, 102, 102, 0.2);
 }
 
 .ai-chat-mcp-tool-select-group label {

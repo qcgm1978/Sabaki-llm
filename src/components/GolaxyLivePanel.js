@@ -161,9 +161,8 @@ export default class GolaxyLivePanel extends Component {
                             h(
                               'span',
                               {},
-                              i18n.t('golaxy', 'Move') +
-                                ' ' +
-                                (game.moveNum ? game.moveNum : 0)
+                              (game.moveNum ? game.moveNum : 0) +
+                                i18n.t('golaxy', 'Move')
                             ),
                             game.liveStatus === 0
                               ? h(

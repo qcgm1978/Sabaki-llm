@@ -211,7 +211,7 @@ class MCPHelper {
             }
           }
         }
-      } else if (cmd.id === 'kata-raw-nn' || cmd.id === 'kata-raw-human-nn') {
+      } else if (cmd.id === 'kata-raw-nn') {
         parameters = {
           type: 'object',
           required: ['symmetry'],
@@ -220,6 +220,23 @@ class MCPHelper {
               type: ['integer', 'string'],
               description: '对称性参数，0-7的整数或all',
               enum: [0, 1, 2, 3, 4, 5, 6, 7, 'all']
+            }
+          }
+        }
+      } else if (cmd.id === 'kata-raw-human-nn') {
+        parameters = {
+          type: 'object',
+          required: ['symmetry'],
+          properties: {
+            symmetry: {
+              type: ['integer', 'string'],
+              description: '对称性参数，0-7的整数或all',
+              enum: [0, 1, 2, 3, 4, 5, 6, 7, 'all']
+            }
+          },
+          dependencies: {
+            'human-model': {
+              description: '需要通过命令行参数 -human-model 提供人类模型文件'
             }
           }
         }

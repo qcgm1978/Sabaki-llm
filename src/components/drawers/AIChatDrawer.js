@@ -26,7 +26,9 @@ export default class AIChatDrawer extends Drawer {
       history: savedHistory,
       currentHistoryIndex: -1,
       tempInput: '',
-      questionCategories: []
+      questionCategories: [],
+      kataGoSearchTerm: '',
+      gtpSearchTerm: ''
     }
 
     // 加载问题分类
@@ -239,7 +241,12 @@ export default class AIChatDrawer extends Drawer {
       })
     }
 
-    this.setState({activeTool: tool, toolParams: defaultParams})
+    this.setState({
+      activeTool: tool,
+      toolParams: defaultParams,
+      kataGoSearchTerm: '',
+      gtpSearchTerm: ''
+    })
   }
 
   handleToolParamChange = (paramName, value) => {
@@ -253,6 +260,22 @@ export default class AIChatDrawer extends Drawer {
 
   handleToolExecute = async () => {
     if (!this.state.activeTool || this.state.sending) return
+
+    // Check if this is the kata-raw-human-nn tool which requires a human model
+    if (this.state.activeTool.id === 'kata-raw-human-nn') {
+      this.setState(prevState => ({
+        messages: [
+          ...prevState.messages,
+          {
+            role: 'system',
+            content: i18n.t(
+              'ai',
+              `Warning: kata-raw-human-nn tool requires a human model file.\nPlease ensure you have provided the -human-model parameter when launching Sabaki.\nExample: sabaki -- --human-model path/to/human_model.bin`
+            )
+          }
+        ]
+      }))
+    }
 
     this.setState(prevState => ({
       sending: true,
@@ -408,6 +431,25 @@ export default class AIChatDrawer extends Drawer {
     )
     let gtpTools = availableTools.filter(tool => tool.id.startsWith('gtp-'))
 
+    // 过滤工具列表
+    const filteredKataGoTools = kataGoTools.filter(
+      tool =>
+        tool.description
+          .toLowerCase()
+          .includes(this.state.kataGoSearchTerm.toLowerCase()) ||
+        tool.id
+          .toLowerCase()
+          .includes(this.state.kataGoSearchTerm.toLowerCase())
+    )
+
+    const filteredGtpTools = gtpTools.filter(
+      tool =>
+        tool.description
+          .toLowerCase()
+          .includes(this.state.gtpSearchTerm.toLowerCase()) ||
+        tool.id.toLowerCase().includes(this.state.gtpSearchTerm.toLowerCase())
+    )
+
     return h(
       'div',
       {class: 'ai-chat-mcp-tools'},
@@ -419,10 +461,17 @@ export default class AIChatDrawer extends Drawer {
           'div',
           {class: 'ai-chat-mcp-tool-select-group'},
           h('label', null, i18n.t('ai', 'KataGo Tools')),
+          h('input', {
+            type: 'text',
+            placeholder: i18n.t('ai', 'Search tools...'),
+            value: this.state.kataGoSearchTerm,
+            onChange: e => this.setState({kataGoSearchTerm: e.target.value})
+          }),
           h(
             'select',
             {
-              value: this.state.activeTool?.id || '',
+              value:
+                this.state.activeTool?.id || filteredKataGoTools[0]?.id || '',
               onChange: e => {
                 const toolId = e.target.value
                 if (toolId) {
@@ -431,8 +480,7 @@ export default class AIChatDrawer extends Drawer {
                 }
               }
             },
-            h('option', {value: ''}, i18n.t('ai', '-- Select Tool --')),
-            kataGoTools.map(tool =>
+            filteredKataGoTools.map(tool =>
               h('option', {key: tool.id, value: tool.id}, tool.description)
             )
           )
@@ -442,10 +490,16 @@ export default class AIChatDrawer extends Drawer {
           'div',
           {class: 'ai-chat-mcp-tool-select-group'},
           h('label', null, i18n.t('ai', 'GTP Commands')),
+          h('input', {
+            type: 'text',
+            placeholder: i18n.t('ai', 'Search GTP commands...'),
+            value: this.state.gtpSearchTerm,
+            onChange: e => this.setState({gtpSearchTerm: e.target.value})
+          }),
           h(
             'select',
             {
-              value: this.state.activeTool?.id || '',
+              value: this.state.activeTool?.id || filteredGtpTools[0]?.id || '',
               onChange: e => {
                 const toolId = e.target.value
                 if (toolId) {
@@ -454,8 +508,7 @@ export default class AIChatDrawer extends Drawer {
                 }
               }
             },
-            h('option', {value: ''}, i18n.t('ai', '-- Select GTP Command --')),
-            gtpTools.map(tool =>
+            filteredGtpTools.map(tool =>
               h('option', {key: tool.id, value: tool.id}, tool.description)
             )
           )

@@ -24,3 +24,4 @@ mcp.txt
 xiuxing.sgf
 
 .DS_Store
+node_modules_store_preact*.*
