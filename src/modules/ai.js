@@ -132,7 +132,7 @@ class AIHelper {
       '用户问题:' +
       fullMessage
 
-    const generator = streamDefinition(prompt, 'zh')
+    const generator = streamDefinition(prompt, setting.get('app.lang'))
 
     console.log('message:', fullMessage)
     let result = ''

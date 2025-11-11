@@ -1,5 +1,6 @@
 const SGF = require('@sabaki/sgf')
 const GoCommunicate = require('./go_communicate')
+const i18n = require('../i18n')
 
 // 延迟导入sabaki模块，避免循环依赖
 let sabaki = null
@@ -25,68 +26,68 @@ class Golaxy extends GoCommunicate {
     this.goodNum = 11
     this.badNum = 4
     this.dLevel = {
-      0: '最佳',
-      1: '很好',
-      3: '可下',
-      4: '欠佳',
-      5: '失误',
-      6: '恶手',
-      '-100': '最后一手'
+      0: i18n.t('golaxy', 'Best'),
+      1: i18n.t('golaxy', 'Very good'),
+      3: i18n.t('golaxy', 'Acceptable'),
+      4: i18n.t('golaxy', 'Suboptimal'),
+      5: i18n.t('golaxy', 'Mistake'),
+      6: i18n.t('golaxy', 'Bad move'),
+      '-100': i18n.t('golaxy', 'Last move')
     }
     this.gameResult = {
       0: {
-        和: 1,
-        无效对局: 0
+        [i18n.t('golaxy', 'Draw')]: 1,
+        [i18n.t('golaxy', 'Invalid game')]: 0
       },
       1: {
-        白中盘胜: 3,
-        白超时胜: 7,
-        白胜: 5
+        [i18n.t('golaxy', 'White wins by resignation')]: 3,
+        [i18n.t('golaxy', 'White wins by timeout')]: 7,
+        [i18n.t('golaxy', 'White wins')]: 5
       },
       '-1': {
-        黑中盘胜: 2,
-        黑超时胜: 6,
-        黑胜: 4
+        [i18n.t('golaxy', 'Black wins by resignation')]: 2,
+        [i18n.t('golaxy', 'Black wins by timeout')]: 6,
+        [i18n.t('golaxy', 'Black wins')]: 4
       }
     }
     this.resultTxt = {
       'B+R': {
-        txt: '黑中盘胜',
+        txt: i18n.t('golaxy', 'Black wins by resignation'),
         win: 'b',
         num: false
       },
       'W+R': {
-        txt: '白中盘胜',
+        txt: i18n.t('golaxy', 'White wins by resignation'),
         win: 'w',
         num: false
       },
       'B+T': {
-        txt: '白超时负',
+        txt: i18n.t('golaxy', 'White loses by timeout'),
         win: 'b',
         num: false
       },
       'W+T': {
-        txt: '黑超时负',
+        txt: i18n.t('golaxy', 'Black loses by timeout'),
         win: 'w',
         num: false
       },
       'B+O': {
-        txt: '白断线负',
+        txt: i18n.t('golaxy', 'White loses by disconnection'),
         win: 'b',
         num: false
       },
       'W+O': {
-        txt: '黑断线负',
+        txt: i18n.t('golaxy', 'Black loses by disconnection'),
         win: 'w',
         num: false
       },
       'R+R': {
-        txt: '和棋',
+        txt: i18n.t('golaxy', 'Draw'),
         win: '',
         num: false
       },
       'N+N': {
-        txt: '无效对局',
+        txt: i18n.t('golaxy', 'Invalid game'),
         win: '',
         num: false
       },
@@ -94,15 +95,15 @@ class Golaxy extends GoCommunicate {
         txt: '',
         win: null,
         num: false,
-        liveTxt: '无胜负'
+        liveTxt: i18n.t('golaxy', 'No result')
       },
       'B+': {
-        txt: '黑胜',
+        txt: i18n.t('golaxy', 'Black wins'),
         win: 'b',
         num: false
       },
       'W+': {
-        txt: '白胜',
+        txt: i18n.t('golaxy', 'White wins'),
         win: 'w',
         num: false
       }

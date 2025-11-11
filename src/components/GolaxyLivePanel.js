@@ -114,16 +114,20 @@ export default class GolaxyLivePanel extends Component {
               type: 'text',
               value: searchQuery,
               onChange: this.handleSearch,
-              placeholder: '搜索棋手或赛事',
+              placeholder: i18n.t('golaxy', 'Search players or events'),
               className: 'search-input'
             }),
-            h('button', {type: 'submit', className: 'search-button'}, '搜索')
+            h(
+              'button',
+              {type: 'submit', className: 'search-button'},
+              i18n.t('golaxy', 'Search')
+            )
           ]
         )
       ]),
 
       isLoading
-        ? h('div', {className: 'loading'}, '加载中...')
+        ? h('div', {className: 'loading'}, i18n.t('golaxy', 'Loading...'))
         : h('div', {className: 'games-list'}, [
             liveGames.length > 0
               ? liveGames.map(game =>
@@ -143,7 +147,7 @@ export default class GolaxyLivePanel extends Component {
                         h(
                           'div',
                           {className: 'game-title'},
-                          game.name || '未命名对局'
+                          game.name || i18n.t('golaxy', 'Unnamed game')
                         ),
                         h('div', {className: 'players'}, [
                           h('span', {className: 'black-player'}, game.pb),
@@ -157,16 +161,20 @@ export default class GolaxyLivePanel extends Component {
                             h(
                               'span',
                               {},
-                              '第 ' + (game.moveNum ? game.moveNum : 0) + ' 手'
+                              i18n.t('golaxy', 'Move') +
+                                ' ' +
+                                (game.moveNum ? game.moveNum : 0)
                             ),
                             game.liveStatus === 0
                               ? h(
                                   'span',
                                   {className: 'live-indicator'},
-                                  `(直播中${
+                                  `(${i18n.t('golaxy', 'Live')}${
                                     this.state.syncingGameId === game.id &&
                                     this.state.lastMove
-                                      ? `, 新着: ${this.state.lastMove}`
+                                      ? `, ${i18n.t('golaxy', 'New move')}: ${
+                                          this.state.lastMove
+                                        }`
                                       : ''
                                   })`
                                 )
@@ -181,7 +189,11 @@ export default class GolaxyLivePanel extends Component {
                     ]
                   )
                 )
-              : h('div', {className: 'no-games'}, '暂无符合条件的对局')
+              : h(
+                  'div',
+                  {className: 'no-games'},
+                  i18n.t('golaxy', 'No matching games found')
+                )
           ]),
 
       h('div', {className: 'action-buttons'}, [
@@ -194,7 +206,9 @@ export default class GolaxyLivePanel extends Component {
                   onClick: this.handleSyncGame,
                   disabled: isSyncing
                 },
-                isSyncing ? '同步中...' : '同步到棋盘'
+                isSyncing
+                  ? i18n.t('golaxy', 'Syncing...')
+                  : i18n.t('golaxy', 'Sync to board')
               ),
               // 只有直播中的棋局才显示停止同步按钮
               selectedGame.liveStatus === 0 &&
@@ -204,7 +218,7 @@ export default class GolaxyLivePanel extends Component {
                     className: 'stop-sync-button',
                     onClick: () => this.handleStopSync()
                   },
-                  '停止同步'
+                  i18n.t('golaxy', 'Stop sync')
                 )
             ].filter(Boolean)
           : h(
@@ -213,7 +227,7 @@ export default class GolaxyLivePanel extends Component {
                 className: 'refresh-button',
                 onClick: () => this.fetchLiveGames()
               },
-              '刷新列表'
+              i18n.t('golaxy', 'Refresh list')
             )
       ])
     ])

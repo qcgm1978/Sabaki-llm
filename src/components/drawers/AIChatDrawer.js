@@ -91,7 +91,7 @@ export default class AIChatDrawer extends Drawer {
     return h(
       'div',
       {class: 'ai-chat-question-prompts'},
-      h('h4', null, '围棋问题示例'),
+      h('h4', null, i18n.t('ai', 'Go Question Examples')),
       this.state.questionCategories.map((category, idx) =>
         h(
           'div',
@@ -260,7 +260,9 @@ export default class AIChatDrawer extends Drawer {
         ...prevState.messages,
         {
           role: 'system',
-          content: `正在执行工具: ${this.state.activeTool.name}`
+          content: i18n.t('ai', 'Executing tool: {{toolName}}', {
+            toolName: this.state.activeTool.name
+          })
         }
       ]
     }))
@@ -301,7 +303,9 @@ export default class AIChatDrawer extends Drawer {
           ...prevState.messages,
           {
             role: 'error',
-            content: `工具执行失败: ${error.message}`
+            content: i18n.t('ai', 'Tool execution failed: {{errorMessage}}', {
+              errorMessage: error.message
+            })
           }
         ],
         sending: false
@@ -329,7 +333,11 @@ export default class AIChatDrawer extends Drawer {
         h(
           'pre',
           {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
-          h('span', {class: 'engine'}, `工具结果 (${message.toolName})>  `),
+          h(
+            'span',
+            {class: 'engine'},
+            `${i18n.t('ai', 'Tool result')} (${message.toolName})>  `
+          ),
           h('span', null, message.content)
         )
       )
@@ -410,7 +418,7 @@ export default class AIChatDrawer extends Drawer {
         h(
           'div',
           {class: 'ai-chat-mcp-tool-select-group'},
-          h('label', null, 'KataGo工具'),
+          h('label', null, i18n.t('ai', 'KataGo Tools')),
           h(
             'select',
             {
@@ -423,7 +431,7 @@ export default class AIChatDrawer extends Drawer {
                 }
               }
             },
-            h('option', {value: ''}, '-- 选择工具 --'),
+            h('option', {value: ''}, i18n.t('ai', '-- Select Tool --')),
             kataGoTools.map(tool =>
               h('option', {key: tool.id, value: tool.id}, tool.description)
             )
@@ -433,7 +441,7 @@ export default class AIChatDrawer extends Drawer {
         h(
           'div',
           {class: 'ai-chat-mcp-tool-select-group'},
-          h('label', null, 'GTP命令'),
+          h('label', null, i18n.t('ai', 'GTP Commands')),
           h(
             'select',
             {
@@ -446,7 +454,7 @@ export default class AIChatDrawer extends Drawer {
                 }
               }
             },
-            h('option', {value: ''}, '-- 选择GTP命令 --'),
+            h('option', {value: ''}, i18n.t('ai', '-- Select GTP Command --')),
             gtpTools.map(tool =>
               h('option', {key: tool.id, value: tool.id}, tool.description)
             )

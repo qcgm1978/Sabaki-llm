@@ -7,6 +7,7 @@ import {EnginePeerList} from './sidebars/PeerList.js'
 import GolaxyLivePanel from './GolaxyLivePanel.js'
 
 const setting = remote.require('./setting')
+const i18n = remote.require('./i18n')
 const peerListMinHeight = setting.get('view.peerlist_minheight')
 
 export default class LeftSidebar extends Component {
@@ -102,7 +103,7 @@ export default class LeftSidebar extends Component {
               className: `tab-button ${activeTab === 'engine' ? 'active' : ''}`,
               onClick: () => this.handleTabChange('engine')
             },
-            '引擎'
+            i18n.t('sidebar', 'Engines')
           ),
           h(
             'button',
@@ -110,7 +111,7 @@ export default class LeftSidebar extends Component {
               className: `tab-button ${activeTab === 'golaxy' ? 'active' : ''}`,
               onClick: () => this.handleTabChange('golaxy')
             },
-            'Golaxy直播'
+            i18n.t('sidebar', 'Golaxy Live')
           )
         ]),
 

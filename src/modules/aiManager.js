@@ -54,7 +54,7 @@ class AIManager {
                 },
                 showCloseButton: false,
                 onClose: handleClose,
-                language: 'zh',
+                language: 'en',
                 styleVariant: 'default'
               })
             )
