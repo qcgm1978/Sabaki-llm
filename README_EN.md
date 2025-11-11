@@ -1,6 +1,7 @@
 # ![Sabaki AI: Intelligent Go Assistant with LLM and KataGo Integration](./banner-llm.png)
 
-[![Download the latest release](https://img.shields.io/github/downloads/qcgm1978/Sabaki-llm/latest/total?label=download)](https://github.com/qcgm1978/Sabaki-llm/releases)
+[GitHub Repository](https://github.com/qcgm1978/Sabaki-llm) |
+[Latest Release](https://github.com/qcgm1978/Sabaki-llm/releases)
 
 ## Core Features
 

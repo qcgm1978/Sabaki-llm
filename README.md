@@ -4,7 +4,8 @@
 
 [英文版本 (English Version)](README_EN.md)
 
-[![下载最新版本](https://img.shields.io/github/downloads/qcgm1978/Sabaki-llm/latest/total?label=下载)](https://github.com/qcgm1978/Sabaki-llm/releases)
+[GitHub 仓库](https://github.com/qcgm1978/Sabaki-llm) |
+[最新发布](https://github.com/qcgm1978/Sabaki-llm/releases)
 
 ## 核心功能
 
