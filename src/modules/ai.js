@@ -185,7 +185,7 @@ class AIHelper {
     try {
       let prompt = `请总结以下工具执行结果，并以自然友好的语言回答用户的原始问题。
 
-用户原始问题: ${originalMessage}
+用户原始问题: ${originalMessage.description || originalMessage}
 
 工具执行结果: ${JSON.stringify(toolResult, null, 2)}`
 

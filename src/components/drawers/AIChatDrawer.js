@@ -260,9 +260,7 @@ export default class AIChatDrawer extends Drawer {
         ...prevState.messages,
         {
           role: 'system',
-          content: i18n.t('ai', 'Executing tool: {{toolName}}', {
-            toolName: this.state.activeTool.name
-          })
+          content: i18n.t('ai', `Executing tool: ${this.state.activeTool.name}`)
         }
       ]
     }))
@@ -303,9 +301,7 @@ export default class AIChatDrawer extends Drawer {
           ...prevState.messages,
           {
             role: 'error',
-            content: i18n.t('ai', 'Tool execution failed: {{errorMessage}}', {
-              errorMessage: error.message
-            })
+            content: i18n.t('ai', `Tool execution failed: ${error.message}`)
           }
         ],
         sending: false
@@ -331,14 +327,18 @@ export default class AIChatDrawer extends Drawer {
         'li',
         {class: 'command tool-result'},
         h(
-          'pre',
+          'div',
           {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
           h(
             'span',
             {class: 'engine'},
             `${i18n.t('ai', 'Tool result')} (${message.toolName})>  `
           ),
-          h('span', null, message.content)
+          h('span', {
+            dangerouslySetInnerHTML: {
+              __html: message.content.replace(/\n/g, '<br>  ')
+            }
+          })
         )
       )
     }
