@@ -54,8 +54,9 @@ class AIManager {
                 },
                 showCloseButton: false,
                 onClose: handleClose,
-                language: 'en',
-                styleVariant: 'default'
+                language: i18n.locale === 'zh' ? 'zh' : 'en',
+                styleVariant: 'default',
+                compactTemplate: true
               })
             )
 
