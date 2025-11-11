@@ -2,10 +2,19 @@
 
 [![Download the latest release](https://img.shields.io/github/downloads/qcgm1978/Sabaki-llm/latest/total?label=download)](https://github.com/qcgm1978/Sabaki-llm/releases)
 
-## Core AI Agent Features
+## Core Features
 
-This project is built on the Sabaki Go interface, with a focus on integrating
-advanced AI features to create an intelligent Go assistant:
+This project is built on the Sabaki Go interface, integrating advanced AI
+features and Galaxy Go platform integration to create a comprehensive Go
+assistant:
+
+### Galaxy Go Platform Integration
+
+- Real-time synchronization with Galaxy Go platform games
+- Support for online gameplay and spectating
+- Rich display of Go game data
+- Real-time updates and synchronization of game information
+- User-friendly interface for managing Galaxy-related features
 
 ### MCP (Model Context Protocol) Integration
 
@@ -42,6 +51,8 @@ advanced AI features to create an intelligent Go assistant:
   two
 - Delivers both professional and easily understandable Go analysis experience
   for users
+- Galaxy integration provides online gameplay and community functionality
+  support
 
 ![Screenshot](screenshot-llm.png)
 

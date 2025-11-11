@@ -404,9 +404,7 @@ class Golaxy extends GoCommunicate {
 
             // 显示新着提示
             if (sabaki.flashInfoOverlay) {
-              sabaki.flashInfoOverlay(
-                `新着: ${this.convertCoordinate(this.lastMove)}`
-              )
+              sabaki.flashInfoOverlay(`新着: ${this.lastMove}`)
             }
           }
         }

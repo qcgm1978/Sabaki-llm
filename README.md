@@ -6,9 +6,18 @@
 
 [![下载最新版本](https://img.shields.io/github/downloads/qcgm1978/Sabaki-llm/latest/total?label=下载)](https://github.com/qcgm1978/Sabaki-llm/releases)
 
-## AI Agent 核心功能
+## 核心功能
 
-本项目基于 Sabaki 围棋界面开发，重点集成了先进的 AI 功能，打造智能围棋助手：
+本项目基于 Sabaki 围棋界面开发，融合了先进的 AI 功能和 Galaxy 围棋平台集成，打造
+全方位围棋助手：
+
+### Galaxy 围棋平台集成
+
+- 实时同步 Galaxy 围棋平台对局
+- 支持在线对弈和观棋功能
+- 提供丰富的围棋对局数据展示
+- 支持对局信息的实时更新和同步
+- 便捷的交互界面管理 Galaxy 相关功能
 
 ### MCP（模型上下文协议）集成
 
@@ -36,6 +45,7 @@
 - KataGo 作为"专业技能扩展"提供领域内的精准分析
 - MCP 作为通信协议实现两者的高效协作
 - 为用户提供既专业又易于理解的围棋分析体验
+- Galaxy 集成提供在线对局和社区功能支持
 
 ![截图](screenshot-llm.png)
 
