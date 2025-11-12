@@ -1,5 +1,5 @@
 const SGF = require('@sabaki/sgf')
-const fetch = require('node-fetch')
+const fetch = require('node-fetch').default
 
 class GoCommunicate {
   constructor(u, c) {

@@ -433,7 +433,7 @@ class MCPHelper {
           properties: {
             sgf: {
               type: 'string',
-              description: 'SGF格式的棋谱内容'
+              description: 'string filename - Name of an sgf file.'
             }
           }
         }

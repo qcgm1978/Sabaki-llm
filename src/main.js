@@ -44,6 +44,9 @@ function newWindow(path) {
     }
   })
 
+  // 为当前窗口启用 @electron/remote
+  require('@electron/remote/main').enable(window.webContents)
+
   windows.push(window)
   buildMenu()
 

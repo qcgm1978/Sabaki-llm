@@ -66,7 +66,7 @@ export default class MainView extends Component {
     }
 
     // 简化事件监听器注册方式，直接使用窗口ID作为第一个参数
-    const {remote} = require('electron')
+    const remote = require('@electron/remote')
     const windowId = remote.getCurrentWindow().id.toString()
 
     // 直接使用setting.events.on注册事件监听器
