@@ -102,7 +102,7 @@
     "dolm": "^0.7.3-beta",
     "fix-path": "<4.0.0",
     "iconv-lite": "^0.5.1",
-    "jschardet": "^3.0.0",
+    "jschardet": "^3.1.4",
     "llm-service-provider": "^3.8.3",
     "natsort": "^2.0.2",
     "node-fetch": "^3.3.2",
