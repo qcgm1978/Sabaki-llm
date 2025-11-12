@@ -183,7 +183,8 @@ export default class AIChatDrawer extends Drawer {
   }
 
   handleKeyDown = evt => {
-    if (evt.key === 'Enter' && !evt.shiftKey) {
+    // 只有在不在输入法组合状态下按回车才发送消息
+    if (evt.key === 'Enter' && !evt.shiftKey && !evt.isComposing) {
       evt.preventDefault()
       this.handleSendMessage()
     } else if (evt.key === 'ArrowUp') {
