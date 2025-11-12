@@ -9,8 +9,7 @@ module.exports = (env, argv) => ({
     path: __dirname
   },
 
-  devtool:
-    argv.mode === 'production' ? 'source-map' : 'eval-cheap-module-source-map',
+  devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
   target: 'electron-renderer',
 
   node: {
@@ -27,7 +26,8 @@ module.exports = (env, argv) => ({
     fallback: {
       crypto: require.resolve('crypto-browserify')
     },
-    extensions: ['.js', '.jsx', '.css']
+    extensions: ['.js', '.jsx', '.css'],
+    symlinks: false
   },
 
   module: {
@@ -52,11 +52,8 @@ module.exports = (env, argv) => ({
   ],
 
   externals: {
-    '@sabaki/i18n': 'require("@sabaki/i18n")',
-    'cross-spawn': 'null',
-    'iconv-lite': 'require("iconv-lite")',
-    moment: 'null',
-    'node:crypto': 'crypto',
-    'copy-webpack-plugin': 'require("copy-webpack-plugin")'
+    '@sabaki/i18n': 'commonjs2 @sabaki/i18n',
+    'iconv-lite': 'commonjs2 iconv-lite',
+    'node:crypto': 'crypto'
   }
 })

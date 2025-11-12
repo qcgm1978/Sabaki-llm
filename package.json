@@ -131,10 +131,11 @@
     "webpack-cli": "^4.10.0"
   },
   "scripts": {
+    "dev-tools": "ELECTRON_ENABLE_LOGGING=1 electron --inspect=5858 --remote-debugging-port=9229 --auto-open-devtools-for-tabs ./",
     "test": "mocha --require esm",
     "start": "electron ./",
     "start-file": "electron ./ \"/Users/dickphilipp/Documents/Sabaki/第3届衢州烂柯杯世界公开赛决赛3番棋3局.sgf\"",
-    "dev": "ELECTRON_ENABLE_LOGGING=1 electron --inspect=5858 ./",
+    "dev": "ELECTRON_ENABLE_LOGGING=1 electron --inspect=5859 --remote-debugging-port=9230 ./",
     "bundle": "webpack --mode production",
     "build": "npm run bundle && electron-builder --dir",
     "create-release": "VERSION=$(node -p \"require('./package.json').version\") && ./scripts/create-release-custom.sh $VERSION auto-commit",
@@ -155,6 +156,8 @@
     "dist:win": "npm run dist:win32 && npm run dist:win64 && npm run dist:win32-portable && npm run dist:win64-portable",
     "i18n": "node ./ci/createI18n.js",
     "sync": "cnpm sync llm-service-provider",
-    "update": "sudo  chmod -R 777 ./ && cnpm update llm-service-provider"
+    "update": "sudo  chmod -R 777 ./ && cnpm update llm-service-provider",
+    "watch-dev": "concurrently \"webpack --mode development --watch\" \"wait-on bundle.js && npm run dev\"",
+    "clear-cache": "rimraf node_modules/.cache && echo '缓存已清理'"
   }
 }

@@ -243,9 +243,9 @@ export default class AIChatDrawer extends Drawer {
 
     this.setState({
       activeTool: tool,
-      toolParams: defaultParams,
-      kataGoSearchTerm: '',
-      gtpSearchTerm: ''
+      toolParams: defaultParams
+      // kataGoSearchTerm: '',
+      // gtpSearchTerm: ''
     })
   }
 
@@ -304,7 +304,6 @@ export default class AIChatDrawer extends Drawer {
           }
         }
       }
-      const msg = JSON.stringify(message)
       let response = await sabaki.aiManager.sendLLMMessage(message, gameContext)
 
       this.setState(prevState => ({
@@ -470,8 +469,7 @@ export default class AIChatDrawer extends Drawer {
           h(
             'select',
             {
-              value:
-                this.state.activeTool?.id || filteredKataGoTools[0]?.id || '',
+              value: this.state.activeTool?.id || '',
               onChange: e => {
                 const toolId = e.target.value
                 if (toolId) {
@@ -480,6 +478,7 @@ export default class AIChatDrawer extends Drawer {
                 }
               }
             },
+            h('option', {value: ''}, ''),
             filteredKataGoTools.map(tool =>
               h('option', {key: tool.id, value: tool.id}, tool.description)
             )
@@ -494,12 +493,33 @@ export default class AIChatDrawer extends Drawer {
             type: 'text',
             placeholder: i18n.t('ai', 'Search GTP commands...'),
             value: this.state.gtpSearchTerm,
-            onChange: e => this.setState({gtpSearchTerm: e.target.value})
+            onChange: e => {
+              const searchTerm = e.target.value
+              // 先更新状态，确保输入内容显示
+              this.setState({gtpSearchTerm: searchTerm}, () => {
+                // 在状态更新后再执行工具选择逻辑
+                const availableTools = mcpHelper.getAvailableEndpoints()
+                const gtpTools = availableTools.filter(tool =>
+                  tool.id.startsWith('gtp-')
+                )
+                const filteredGtpTools = gtpTools.filter(
+                  tool =>
+                    tool.description
+                      .toLowerCase()
+                      .includes(searchTerm.toLowerCase()) ||
+                    tool.id.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+
+                if (filteredGtpTools.length > 0) {
+                  this.handleToolSelect(filteredGtpTools[0])
+                }
+              })
+            }
           }),
           h(
             'select',
             {
-              value: this.state.activeTool?.id || filteredGtpTools[0]?.id || '',
+              value: this.state.activeTool?.id || '',
               onChange: e => {
                 const toolId = e.target.value
                 if (toolId) {
@@ -508,6 +528,7 @@ export default class AIChatDrawer extends Drawer {
                 }
               }
             },
+            h('option', {value: ''}, ''),
             filteredGtpTools.map(tool =>
               h('option', {key: tool.id, value: tool.id}, tool.description)
             )

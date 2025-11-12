@@ -27,25 +27,46 @@ class PreferencesItem extends Component {
     super(props)
 
     this.state = {
-      checked: setting.get(props.id)
+      value: setting.get(props.id)
     }
 
     this.handleChange = evt => {
+      const newValue =
+        this.props.type === 'checkbox'
+          ? evt.currentTarget.checked
+          : evt.currentTarget.value
+      setting.set(this.props.id, newValue)
       let {onChange = noop} = this.props
-      let {checked} = evt.currentTarget
-
-      setting.set(this.props.id, checked)
-      onChange(Object.assign({checked}, this.props))
+      onChange(Object.assign({checked: newValue}, this.props))
     }
 
     setting.events.on(sabaki.window.id, 'change', ({key, value}) => {
       if (key === this.props.id) {
-        this.setState({checked: value})
+        this.setState({value})
       }
     })
   }
 
-  render({text}, {checked}) {
+  render({text, type = 'checkbox', options = []}, {value}) {
+    if (type === 'select') {
+      return h(
+        'li',
+        {class: 'preferences-item'},
+        h('span', {}, text, ' '),
+        h(
+          'select',
+          {
+            value,
+            onChange: this.handleChange
+          },
+          options.map(option =>
+            h('option', {value: option.value}, option.label)
+          )
+        )
+      )
+    }
+
+    // 默认的复选框类型
     return h(
       'li',
       {class: 'preferences-item'},
@@ -54,7 +75,7 @@ class PreferencesItem extends Component {
         {},
         h('input', {
           type: 'checkbox',
-          checked,
+          checked: value,
           onChange: this.handleChange
         }),
         ' ',
@@ -755,6 +776,17 @@ class EnginesTab extends Component {
           h(PreferencesItem, {
             id: 'engines.auto_connect',
             text: t('Automatically connect engines on startup')
+          }),
+
+          h(PreferencesItem, {
+            id: 'engines.connect_mode',
+            text: t('Engine connection mode:'),
+            type: 'select',
+            options: [
+              {value: 'all', label: t('Connect all engines')},
+              {value: 'first', label: t('Connect only first engine')},
+              {value: 'last_used', label: t('Connect last used engine')}
+            ]
           })
         )
       ),

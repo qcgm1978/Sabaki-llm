@@ -154,6 +154,8 @@ let defaults = {
   'edit.show_removeothervariations_warning': true,
   'engines.list': [],
   'engines.auto_connect': false,
+  'engines.connect_mode': 'first', // 'all', 'first', 'last_used' - 默认为first以避免连接所有引擎
+  'engines.last_used_engine': null,
   'engines.analyze_commands': ['analyze', 'kata-analyze', 'lz-analyze'],
   'engines.gemove_analyze_commands': [
     'genmove_analyze',

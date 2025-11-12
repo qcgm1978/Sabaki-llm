@@ -1830,6 +1830,9 @@ class Sabaki extends EventEmitter {
     for (let engine of engines) {
       engine = {...engine, name: getEngineName(engine.name)}
 
+      // 记录最后使用的引擎
+      setting.set('engines.last_used_engine', engine)
+
       let syncer = new EngineSyncer(engine)
 
       syncer.on('analysis-update', () => {

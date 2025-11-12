@@ -219,7 +219,34 @@ class App extends Component {
         if (setting.get('engines.auto_connect')) {
           let engines = setting.get('engines.list')
           if (engines && engines.length > 0) {
-            sabaki.attachEngines(engines)
+            const connectMode = setting.get('engines.connect_mode')
+
+            if (connectMode === 'last_used') {
+              // 尝试连接最后使用的引擎
+              const lastUsedEngine = setting.get('engines.last_used_engine')
+              if (lastUsedEngine && lastUsedEngine.name) {
+                // 如果保存了完整的引擎对象，直接使用
+                sabaki.attachEngines([lastUsedEngine])
+              } else if (lastUsedEngine && typeof lastUsedEngine === 'string') {
+                // 如果是保存的ID，根据ID查找
+                const engineById = engines.find(e => e.id === lastUsedEngine)
+                if (engineById) {
+                  sabaki.attachEngines([engineById])
+                } else {
+                  // 如果没有记录或找不到，连接第一个引擎
+                  sabaki.attachEngines([engines[0]])
+                }
+              } else {
+                // 如果没有记录，连接第一个引擎
+                sabaki.attachEngines([engines[0]])
+              }
+            } else if (connectMode === 'first') {
+              // 只连接第一个引擎
+              sabaki.attachEngines([engines[0]])
+            } else {
+              // 默认连接所有引擎
+              sabaki.attachEngines(engines)
+            }
           }
         }
 

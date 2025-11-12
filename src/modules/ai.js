@@ -40,11 +40,6 @@ class AIHelper {
   }
 
   async sendLLMMessage(message, gameContext) {
-    // if (!hasApiKey()) {
-    //   sabaki.aiManager.openApiKeyManager()
-    //   return {error: 'LLM API Key not configured'}
-    // }
-
     let {gameTrees, gameIndex, treePosition} = gameContext
     let tree = gameTrees[gameIndex]
     let currentNode = tree.get(treePosition)
