@@ -20,6 +20,8 @@ import * as gtplogger from './gtplogger.js'
 import * as helper from './helper.js'
 import * as sound from './sound.js'
 import AIManager from './aiManager.js'
+import {AgentOrchestrator} from './agentOrchestrator.js'
+import BoardDisplayController from './BoardDisplayController.js'
 
 deadstones.useFetch('./node_modules/@sabaki/deadstones/wasm/deadstones_bg.wasm')
 
@@ -123,6 +125,12 @@ class Sabaki extends EventEmitter {
 
     // Initialize AI manager
     this.aiManager = new AIManager(this)
+
+    // Initialize Agent Orchestrator
+    this.agentOrchestrator = new AgentOrchestrator()
+
+    // Initialize Board Display Controller
+    this.boardDisplayController = new BoardDisplayController(this)
 
     // Bind state to settings
 
@@ -3041,8 +3049,60 @@ class Sabaki extends EventEmitter {
     )
   }
 
-  async sendLLMMessage(message) {
-    return await this.aiManager.sendLLMMessage(message)
+  async sendLLMMessage(message, gameContext) {
+    // 使用新的智能体编排层处理请求
+    if (!gameContext) {
+      // 如果没有提供gameContext，创建默认的
+      gameContext = {
+        gameTrees: this.state.gameTrees,
+        gameIndex: this.state.gameIndex,
+        treePosition: this.state.treePosition
+      }
+    }
+
+    try {
+      // 使用智能体编排层
+      return await this.agentOrchestrator.run(message, gameContext, {
+        maxSteps: 5,
+        timeout: 120000
+      })
+    } catch (error) {
+      console.error('Agent orchestration failed:', error)
+      // 降级处理：回退到原始的aiManager
+      return await this.aiManager.sendLLMMessage(message, gameContext)
+    }
+  }
+
+  /**
+   * 获取智能体编排层实例
+   */
+  getAgentOrchestrator() {
+    return this.agentOrchestrator
+  }
+
+  /**
+   * 取消当前智能体执行
+   */
+  cancelAgentExecution() {
+    if (this.agentOrchestrator) {
+      this.agentOrchestrator.pause()
+    }
+  }
+
+  /**
+   * 提供Goban组件实例给棋盘显示控制器
+   */
+  setGobanInstance(goban) {
+    if (this.boardDisplayController) {
+      this.boardDisplayController.setGoban(goban)
+    }
+  }
+
+  /**
+   * 获取棋盘显示控制器
+   */
+  getBoardDisplayController() {
+    return this.boardDisplayController
   }
 
   // 保留向后兼容接口

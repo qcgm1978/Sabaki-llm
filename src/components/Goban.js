@@ -78,6 +78,11 @@ export default class Goban extends Component {
 
     this.resize()
     this.componentWillReceiveProps()
+
+    // 注册到棋盘显示控制器
+    if (window.sabaki) {
+      window.sabaki.setGobanInstance(this)
+    }
   }
 
   componentDidUpdate() {
@@ -107,6 +112,11 @@ export default class Goban extends Component {
         'change',
         this.handleSettingChange
       )
+
+      // 清理注册
+      if (window.sabaki && window.sabaki.getBoardDisplayController()) {
+        window.sabaki.getBoardDisplayController().setGoban(null)
+      }
     } catch (e) {
       // 忽略可能的错误，确保组件能够正常卸载
     }

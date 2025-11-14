@@ -1,12 +1,9 @@
 import * as remote from '@electron/remote'
 const setting = remote.require('./setting')
 import mcpHelper from './mcpHelper.js'
-import {
-  streamDefinition,
-  getSelectedServiceProvider,
-  hasApiKey
-} from 'llm-service-provider'
+import {streamDefinition, hasApiKey} from 'llm-service-provider'
 import sabaki from './sabaki.js'
+import agentOrchestrator from './agentOrchestrator.js'
 
 class AIHelper {
   formatParameters(parameters) {
@@ -88,20 +85,7 @@ class AIHelper {
       }
     }
 
-    let availableTools = mcpHelper.getAvailableEndpoints()
-
-    let toolsInfo = availableTools
-      .map(
-        tool => `
-  - 工具名称: ${tool.name}
-    描述: ${tool.description}
-    参数要求: ${
-      tool.parameters ? this.formatParameters(tool.parameters) : '无'
-    }`
-      )
-      .join('')
-
-    const provider = getSelectedServiceProvider()
+    const provider = agentOrchestrator.getCurrentProvider()
     console.log('Selected LLM provider:', provider)
 
     const pre_prompt =
@@ -111,14 +95,15 @@ class AIHelper {
       '1. 当你需要调用工具分析时，必须使用mcp格式，不要在response中提及工具名称:\n' +
       '{"mcp":{"tool":{"name":"工具名称","description":"工具描述","parameters":{参数对象}}}}' +
       '\n' +
-      '2. 当你可以直接回答用户问题时，使用response格式:\n' +
-      '{"response":"你的回答内容"}\n' +
-      '\n' +
-      '你可以使用以下MCP工具:\n'
+      '2. 当你可以直接回答用户问题时，使用content格式:\n' +
+      '{"content":"你的回答内容"}\n' +
+      '\n'
 
+    // 工具列表将通过streamDefinition函数内部处理
+
+    // 使用从AgentOrchestrator获取的工具信息构建围棋助手专用prompt
     let prompt =
       pre_prompt +
-      toolsInfo +
       '\n' +
       gameInfo +
       '当前游戏状态:\n' +
@@ -136,6 +121,15 @@ class AIHelper {
       result += chunk
     }
     console.log('raw response:', result)
+    // 处理可能的工具详情请求
+    const toolDetailResponse = await this.handleToolDetailRequest(
+      result,
+      gameContext
+    )
+    if (toolDetailResponse) {
+      return toolDetailResponse
+    }
+
     let parsedResponse = JSON.parse(result.replace(/```json|```/g, ''))
     if (parsedResponse.mcp && parsedResponse.mcp.tool) {
       let toolDescription = `${provider}: ${parsedResponse.mcp.tool.description}`
@@ -163,9 +157,9 @@ class AIHelper {
       }
 
       return resultResponse
-    } else if (parsedResponse.response) {
+    } else if (parsedResponse.content) {
       return {
-        content: parsedResponse.response.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
+        content: parsedResponse.content.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
       }
     }
 
@@ -190,6 +184,29 @@ class AIHelper {
     } catch (err) {
       return {error: err.message}
     }
+  }
+
+  // 检查LLM响应是否请求工具详情，并处理
+  async handleToolDetailRequest(response, gameContext) {
+    // 检查是否包含工具详情请求的模式
+    const toolNameMatch = response.match(/我需要了解(.*?)工具的详细参数/i)
+
+    if (toolNameMatch && toolNameMatch[1]) {
+      const requestedToolName = toolNameMatch[1].trim()
+      const toolDetails = agentOrchestrator.getToolDetails(requestedToolName)
+
+      if (toolDetails) {
+        // 构建包含工具详情的提示
+        let prompt =
+          `以下是您请求的${requestedToolName}工具的详细信息：\n${toolDetails}\n\n` +
+          '请基于这些信息，决定下一步操作。如果您想使用该工具，请使用工具调用格式；\n' +
+          '如果您已获得足够信息，可以直接回答用户的问题。'
+
+        return await this.sendLLMMessage(prompt, gameContext)
+      }
+    }
+
+    return null // 不是工具详情请求
   }
 
   async callMCPTool(toolId, params, gameContext) {

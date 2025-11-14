@@ -4,6 +4,10 @@ import i18n from '../../i18n.js'
 import TextSpinner from '../TextSpinner.js'
 import mcpHelper from '../../modules/mcpHelper.js'
 import Drawer from './Drawer.js'
+import {
+  AgentOrchestrator,
+  AGENT_STATES
+} from '../../modules/agentOrchestrator.js'
 
 const t = i18n.context('AIChatDrawer')
 
@@ -28,14 +32,80 @@ export default class AIChatDrawer extends Drawer {
       tempInput: '',
       questionCategories: [],
       kataGoSearchTerm: '',
-      gtpSearchTerm: ''
+      gtpSearchTerm: '',
+      agentStatus: AGENT_STATES.IDLE,
+      executionStats: null
     }
 
     // 加载问题分类
     this.loadQuestionCategories()
     this.messagesContainer = null
 
+    // 创建编排层实例
+    this.agentOrchestrator = new AgentOrchestrator()
+
+    // 添加状态监听器
+    this.agentOrchestrator.addStateListener(
+      this.handleAgentStateChange.bind(this)
+    )
+
+    // 添加错误处理器
+    this.agentOrchestrator.addErrorHandler(this.handleAgentError.bind(this))
+
     sabaki.on('ai.message.add', this.handleAIMessageAdd)
+  }
+
+  componentWillUnmount() {
+    sabaki.off('ai.message.add', this.handleAIMessageAdd)
+
+    localStorage.setItem(
+      'sabaki-llm-history',
+      JSON.stringify(this.state.history)
+    )
+
+    // 清理监听器
+    this.agentOrchestrator.removeStateListener(this.handleAgentStateChange)
+    this.agentOrchestrator.removeErrorHandler(this.handleAgentError)
+
+    // 终止正在运行的智能体
+    this.agentOrchestrator.pause()
+  }
+
+  handleAgentStateChange(newState, oldState) {
+    this.setState({agentStatus: newState})
+
+    // 更新执行统计信息
+    if (newState !== AGENT_STATES.IDLE) {
+      this.setState({executionStats: this.agentOrchestrator.getStats()})
+    }
+
+    // 根据状态更新UI反馈
+    switch (newState) {
+      case AGENT_STATES.THINKING:
+        console.log('Agent is thinking...')
+        break
+      case AGENT_STATES.ACTING:
+        console.log('Agent is acting...')
+        break
+      case AGENT_STATES.OBSERVING:
+        console.log('Agent is observing results...')
+        break
+      case AGENT_STATES.ERROR:
+        console.log('Agent encountered an error')
+        break
+    }
+  }
+
+  handleAgentError(error) {
+    console.error('Agent error:', error)
+    this.setState({error: error.message})
+    // 可以在这里添加错误提示UI
+  }
+
+  // 取消当前智能体执行
+  cancelExecution() {
+    this.agentOrchestrator.pause()
+    this.setState({sending: false})
   }
 
   componentWillUnmount() {
@@ -160,7 +230,12 @@ export default class AIChatDrawer extends Drawer {
       treePosition: sabaki.state.treePosition
     }
 
-    let response = await sabaki.sendLLMMessage(message, gameContext)
+    // 使用智能体编排层处理请求
+    const response = await this.agentOrchestrator.run(message, gameContext, {
+      maxSteps: 20,
+      timeout: 180000, // 3分钟超时
+      maxRetries: 2
+    })
 
     const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
     if (response.error) {
@@ -169,15 +244,26 @@ export default class AIChatDrawer extends Drawer {
           ...updatedMessages,
           {role: 'error', content: response.error}
         ],
-        sending: false
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
       })
     } else {
+      const content =
+        response.content || response.result?.content || 'No response'
+
+      // 处理棋盘显示指令
+      this.processBoardDisplayInstructions(content)
+
       this.setState({
         messages: [
           ...updatedMessages,
-          {role: 'ai', content: response.content || response}
+          {
+            role: 'ai',
+            content: content
+          }
         ],
-        sending: false
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
       })
     }
   }
@@ -194,6 +280,99 @@ export default class AIChatDrawer extends Drawer {
       evt.preventDefault()
       this.navigateHistory(-1)
     }
+  }
+
+  // 处理棋盘显示指令
+  processBoardDisplayInstructions = content => {
+    try {
+      // 尝试从JSON格式解析棋盘指令
+      if (content.startsWith('{') && content.includes('boardDisplay')) {
+        const parsed = JSON.parse(content)
+        if (parsed.boardDisplay) {
+          this.applyBoardDisplayCommands(parsed.boardDisplay)
+        }
+      }
+      // 尝试从文本中提取JSON格式的棋盘指令块
+      else if (
+        content.includes('```json') &&
+        content.includes('boardDisplay')
+      ) {
+        const jsonMatch = content.match(/```json([\s\S]*?)```/)
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[1])
+            if (parsed.boardDisplay) {
+              this.applyBoardDisplayCommands(parsed.boardDisplay)
+            }
+          } catch (e) {
+            console.warn(
+              'Failed to parse board display instructions from JSON block:',
+              e
+            )
+          }
+        }
+      }
+      // 尝试从文本中提取特殊标记的棋盘指令
+      else if (content.includes('BOARD_DISPLAY:')) {
+        const instructionMatch = content.match(/BOARD_DISPLAY:\s*({[^}]*})/)
+        if (instructionMatch) {
+          try {
+            const parsed = JSON.parse(instructionMatch[1])
+            this.applyBoardDisplayCommands(parsed)
+          } catch (e) {
+            console.warn('Failed to parse board display instructions:', e)
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Error processing board display instructions:', error)
+    }
+  }
+
+  // 应用棋盘显示命令
+  applyBoardDisplayCommands = commands => {
+    // 获取棋盘显示控制器
+    const boardDisplayController = sabaki.getBoardDisplayController()
+    if (!boardDisplayController) {
+      console.warn('BoardDisplayController not available')
+      return
+    }
+
+    // 清除现有显示（如果指定）
+    if (commands.clear) {
+      boardDisplayController.clearBoardDisplay()
+    }
+
+    // 设置标记
+    if (commands.markers) {
+      boardDisplayController.setBoardMarkers(commands.markers)
+    }
+
+    // 设置高亮
+    if (commands.highlights) {
+      boardDisplayController.setBoardHighlights(commands.highlights)
+    }
+
+    // 设置热力图
+    if (commands.heatmap) {
+      boardDisplayController.setBoardHeatmap(
+        commands.heatmap.points,
+        commands.heatmap.maxValue
+      )
+    }
+
+    // 绘制线条
+    if (commands.lines) {
+      boardDisplayController.drawBoardLines(commands.lines)
+    }
+
+    // 显示变化走法
+    if (commands.variations) {
+      boardDisplayController.showBoardVariations(commands.variations)
+    }
+
+    // 更新棋盘显示
+    boardDisplayController.updateDisplay()
   }
 
   navigateHistory(direction) {
@@ -305,18 +484,33 @@ export default class AIChatDrawer extends Drawer {
           }
         }
       }
-      let response = await sabaki.aiManager.sendLLMMessage(message, gameContext)
+      // 使用智能体编排层处理工具调用
+      const response = await this.agentOrchestrator.run(message, gameContext, {
+        maxSteps: 20,
+        timeout: 180000, // 3分钟超时
+        maxRetries: 1
+      })
+
+      const resultContent =
+        response.error ||
+        response.content ||
+        response.result?.content ||
+        'Tool execution completed'
+
+      // 处理棋盘显示指令
+      this.processBoardDisplayInstructions(resultContent)
 
       this.setState(prevState => ({
         messages: [
           ...prevState.messages,
           {
             role: 'tool-result',
-            content: response.error || response.content,
+            content: resultContent,
             toolName: this.state.activeTool.name
           }
         ],
-        sending: false
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
       }))
     } catch (error) {
       this.setState(prevState => ({
@@ -327,7 +521,8 @@ export default class AIChatDrawer extends Drawer {
             content: i18n.t('ai', `Tool execution failed: ${error.message}`)
           }
         ],
-        sending: false
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
       }))
     }
   }
