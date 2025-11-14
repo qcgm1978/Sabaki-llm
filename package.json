@@ -135,7 +135,7 @@
     "dev-tools": "ELECTRON_ENABLE_LOGGING=1 electron --inspect=5858 --remote-debugging-port=9229 --auto-open-devtools-for-tabs ./",
     "test": "node run_tests.js",
     "start": "electron ./",
-    "start-file": "electron ./ \"/Users/dickphilipp/Documents/Sabaki/第3届衢州烂柯杯世界公开赛决赛3番棋3局.sgf\"",
+    "start-file": "electron ./ \"test/sgf/第3届衢州烂柯杯世界公开赛决赛3番棋3局.sgf\"",
     "dev": "ELECTRON_ENABLE_LOGGING=1 electron --inspect=5859 --remote-debugging-port=9230 ./",
     "bundle": "webpack --mode production",
     "build": "npm run bundle && electron-builder --dir",
