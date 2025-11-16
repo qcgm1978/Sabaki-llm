@@ -22,6 +22,16 @@ export const ERROR_TYPES = {
   UNKNOWN_ERROR: 'unknown_error'
 }
 
+// 工具类型常量
+export const TOOL_TYPES = {
+  // 函数工具：执行特定功能的工具，通常与外部系统交互
+  FUNCTION: 'function',
+  // 内置工具：AgentOrchestrator内部提供的基础工具
+  BUILTIN: 'builtin',
+  // 智能体工具：由智能体自身提供的复杂功能工具
+  AGENT: 'agent'
+}
+
 export class AgentOrchestrator {
   constructor() {
     this.agentState = {
@@ -37,6 +47,12 @@ export class AgentOrchestrator {
       timeout: 300000,
       retryCount: 0,
       maxRetries: 3
+    }
+    
+    // 工具控制配置
+    this.toolConfig = {
+      includeBoardContext: true, // 控制是否包含boardContext数据
+      boardContextMaxLength: 1000 // boardContext最大长度限制
     }
 
     this.boardDisplayState = {
@@ -414,15 +430,38 @@ export class AgentOrchestrator {
       })
 
       const validatedToolInfo = this._validateToolParameters(toolInfo)
-
-      const toolResult = await mcpHelper.handleMCPRequest(
-        {
-          mcp: {
-            tool: validatedToolInfo
-          }
-        },
-        this.agentState.conversationContext.gameContext
-      )
+      
+      // 根据工具类型执行不同的逻辑
+      let toolResult
+      
+      switch (validatedToolInfo.type) {
+        case TOOL_TYPES.BUILTIN:
+          // 内置工具的特殊处理逻辑可以在这里添加
+          // 目前默认走标准流程
+          console.log(`执行内置工具: ${validatedToolInfo.name}`)
+          toolResult = await this._executeBuiltinTool(validatedToolInfo)
+          break
+          
+        case TOOL_TYPES.AGENT:
+          // 智能体工具的特殊处理逻辑
+          console.log(`执行智能体工具: ${validatedToolInfo.name}`)
+          toolResult = await this._executeAgentTool(validatedToolInfo)
+          break
+          
+        case TOOL_TYPES.FUNCTION:
+        default:
+          // 函数工具和未指定类型的工具使用标准MCP请求流程
+          console.log(`执行函数工具: ${validatedToolInfo.name}`)
+          toolResult = await mcpHelper.handleMCPRequest(
+            {
+              mcp: {
+                tool: validatedToolInfo
+              }
+            },
+            this.agentState.conversationContext.gameContext
+          )
+          break
+      }
 
       return this._processToolResult(toolResult)
     } catch (error) {
@@ -433,27 +472,58 @@ export class AgentOrchestrator {
       }
     }
   }
+  
+  // 执行内置工具的方法
+  async _executeBuiltinTool(toolInfo) {
+    // 内置工具默认也走MCP请求流程，可以在这里添加特定的内置工具处理
+    return await mcpHelper.handleMCPRequest(
+      {
+        mcp: {
+          tool: toolInfo
+        }
+      },
+      this.agentState.conversationContext.gameContext
+    )
+  }
+  
+  // 执行智能体工具的方法
+  async _executeAgentTool(toolInfo) {
+    // 智能体工具默认也走MCP请求流程，可以在这里添加特定的智能体工具处理
+    return await mcpHelper.handleMCPRequest(
+      {
+        mcp: {
+          tool: toolInfo
+        }
+      },
+      this.agentState.conversationContext.gameContext
+    )
+  }
 
   _validateToolParameters(toolInfo) {
     const validatedParams = {...toolInfo}
-    const availableEndpoints = mcpHelper.getAvailableEndpoints()
-    const endpoint = availableEndpoints.find(e => e.name === toolInfo.name)
+    const availableTools = this.getAvailableTools()
+    const tool = availableTools.find(e => e.name === toolInfo.name)
 
-    if (endpoint && endpoint.parameters) {
-      if (!validatedParams.parameters) {
-        validatedParams.parameters = {}
-      }
+    if (tool) {
+      // 保留工具类型信息
+      validatedParams.type = tool.type
+      
+      if (tool.parameters) {
+        if (!validatedParams.parameters) {
+          validatedParams.parameters = {}
+        }
 
-      if (endpoint.parameters.properties) {
-        Object.keys(endpoint.parameters.properties).forEach(key => {
-          const prop = endpoint.parameters.properties[key]
-          if (
-            prop.default !== undefined &&
-            validatedParams.parameters[key] === undefined
-          ) {
-            validatedParams.parameters[key] = prop.default
-          }
-        })
+        if (tool.parameters.properties) {
+          Object.keys(tool.parameters.properties).forEach(key => {
+            const prop = tool.parameters.properties[key]
+            if (
+              prop.default !== undefined &&
+              validatedParams.parameters[key] === undefined
+            ) {
+              validatedParams.parameters[key] = prop.default
+            }
+          })
+        }
       }
     }
 
@@ -474,35 +544,177 @@ export class AgentOrchestrator {
     }
   }
 
-  getAvailableTools() {
-    return mcpHelper.getAvailableEndpoints()
+  // 根据工具类型获取可用工具
+  getAvailableTools(toolType = null) {
+    const endpoints = mcpHelper.getAvailableEndpoints()
+    
+    // 确保每个工具都有类型标识，如果没有则默认为函数工具
+    const toolsWithType = endpoints.map(tool => ({
+      ...tool,
+      type: tool.type || TOOL_TYPES.FUNCTION
+    }))
+    
+    // 如果指定了工具类型，则过滤返回对应类型的工具
+    if (toolType && Object.values(TOOL_TYPES).includes(toolType)) {
+      return toolsWithType.filter(tool => tool.type === toolType)
+    }
+    
+    return toolsWithType
+  }
+  
+  // 获取按类型分组的工具
+  getToolsByType() {
+    const tools = this.getAvailableTools()
+    const grouped = {
+      [TOOL_TYPES.FUNCTION]: [],
+      [TOOL_TYPES.BUILTIN]: [],
+      [TOOL_TYPES.AGENT]: []
+    }
+    
+    tools.forEach(tool => {
+      if (grouped.hasOwnProperty(tool.type)) {
+        grouped[tool.type].push(tool)
+      } else {
+        // 未知类型默认为函数工具
+        grouped[TOOL_TYPES.FUNCTION].push(tool)
+      }
+    })
+    
+    return grouped
   }
 
   getCurrentProvider() {
     return getSelectedServiceProvider()
   }
 
-  formatToolsList(detailed = false, includePrefix = false) {
-    const availableTools = this.getAvailableTools()
+  /**
+   * 设置工具配置
+   */
+  setToolConfig(config) {
+    if (config && typeof config === 'object') {
+      this.toolConfig = {
+        ...this.toolConfig,
+        ...config
+      }
+    }
+  }
 
-    if (detailed) {
-      const toolsList = availableTools
-        .map(
-          tool => `
-  - 工具名称: ${tool.name}
+  /**
+   * 获取工具配置
+   */
+  getToolConfig() {
+    return {...this.toolConfig}
+  }
+
+  /**
+   * 获取boardContext数据
+   * 根据配置决定是否返回boardContext
+   */
+  async getBoardContext(gameContext) {
+    if (!this.toolConfig.includeBoardContext) {
+      return ''
+    }
+
+    try {
+      const result = await mcpHelper.handleMCPRequest(
+        {
+          mcp: {
+            tool: {
+              name: 'get-board-context',
+              parameters: { includeFullHistory: true }
+            }
+          }
+        },
+        gameContext
+      )
+      
+      if (result.success && result.data && result.data.boardContext) {
+        let boardContext = result.data.boardContext
+        
+        // 如果设置了最大长度限制，并且boardContext超过了这个限制，则截断
+        if (this.toolConfig.boardContextMaxLength > 0 && 
+            boardContext.length > this.toolConfig.boardContextMaxLength) {
+          boardContext = boardContext.substring(0, this.toolConfig.boardContextMaxLength) + '...'
+        }
+        
+        return boardContext
+      }
+      
+      return ''
+    } catch (error) {
+      console.error('获取boardContext时出错:', error)
+      return ''
+    }
+  }
+
+  formatToolsList(detailed = false, includePrefix = false, grouped = true) {
+    if (grouped) {
+      const toolsByType = this.getToolsByType()
+      let toolsList = ''
+      
+      // 按类型分组格式化工具列表
+      const typeNames = {
+        [TOOL_TYPES.FUNCTION]: '函数工具',
+        [TOOL_TYPES.BUILTIN]: '内置工具',
+        [TOOL_TYPES.AGENT]: '智能体工具'
+      }
+      
+      Object.entries(toolsByType).forEach(([type, tools]) => {
+        if (tools.length > 0) {
+          toolsList += `\n${typeNames[type]} (${tools.length}个):\n`
+          
+          if (detailed) {
+            toolsList += tools
+              .map(
+                tool => `  - 工具名称: ${tool.name}
     描述: ${tool.description}
     参数要求: ${
       tool.parameters ? this._formatParameters(tool.parameters) : '无'
     }`
-        )
-        .join('')
-      return includePrefix ? `你可以使用以下MCP工具:\n${toolsList}` : toolsList
+              )
+              .join('\n')
+          } else {
+            toolsList += tools
+              .map(tool => `  - ${tool.name}: ${tool.description}`)
+              .join('\n')
+          }
+          
+          toolsList += '\n'
+        }
+      })
+      
+      return includePrefix ? `你可以使用以下工具:\n${toolsList}` : toolsList
     } else {
-      const toolsList = availableTools
-        .map(tool => `  - ${tool.name}: ${tool.description}`)
-        .join('\n')
-      return includePrefix ? `可用工具:\n${toolsList}` : toolsList
+      // 兼容原有格式，不分组显示
+      const availableTools = this.getAvailableTools()
+
+      if (detailed) {
+        const toolsList = availableTools
+          .map(
+            tool => `
+  - 工具名称: ${tool.name}\n    类型: ${this._getToolTypeName(tool.type)}\n    描述: ${tool.description}\n    参数要求: ${
+      tool.parameters ? this._formatParameters(tool.parameters) : '无'
+    }`
+          )
+          .join('')
+        return includePrefix ? `你可以使用以下MCP工具:\n${toolsList}` : toolsList
+      } else {
+        const toolsList = availableTools
+          .map(tool => `  - ${tool.name} [${this._getToolTypeName(tool.type)}]: ${tool.description}`)
+          .join('\n')
+        return includePrefix ? `可用工具:\n${toolsList}` : toolsList
+      }
     }
+  }
+  
+  // 获取工具类型的中文名称
+  _getToolTypeName(type) {
+    const typeNames = {
+      [TOOL_TYPES.FUNCTION]: '函数',
+      [TOOL_TYPES.BUILTIN]: '内置',
+      [TOOL_TYPES.AGENT]: '智能体'
+    }
+    return typeNames[type] || '函数'
   }
 
   // 获取单个工具的详细信息
@@ -516,6 +728,7 @@ export class AgentOrchestrator {
 
     return `
   - 工具名称: ${tool.name}
+    类型: ${this._getToolTypeName(tool.type)}
     描述: ${tool.description}
     参数要求: ${
       tool.parameters ? this._formatParameters(tool.parameters) : '无'
@@ -556,7 +769,8 @@ export class AgentOrchestrator {
   _buildThoughtPrompt() {
     const {initialMessage, lastToolResult} = this.agentState.conversationContext
 
-    const toolsList = this.formatToolsList(false, true)
+    // 使用分组格式的工具列表，便于模型理解不同类型的工具
+    const toolsList = this.formatToolsList(false, true, true)
 
     let prompt =
       '你是智能体的思考中心。基于用户问题和对话历史，分析当前情况并决定下一步行动。\n\n'
@@ -569,13 +783,13 @@ export class AgentOrchestrator {
     }
 
     prompt += '请分析当前情况并决定执行以下哪个行动:\n'
-    prompt += '1. 使用工具: 调用MCP工具获取更多信息或执行操作\n'
+    prompt += '1. 使用工具: 调用适当类型的工具获取更多信息或执行操作\n'
     prompt += '2. 直接回答: 已经有足够信息回答用户问题\n'
     prompt += '3. 请求澄清: 需要用户提供更多信息\n\n'
 
     prompt += '请以JSON格式返回你的决定:\n'
     prompt +=
-      '{"mcp": {"tool": {"name": "工具名称", "description": "工具描述", "parameters": {...}}}, "action": "tool_call|respond|ask_clarification", "content": "思考内容"} 或 {"action": "respond|ask_clarification", "content": "回答或澄清内容"}'
+      '{"mcp": {"tool": {"name": "工具名称", "type": "工具类型", "description": "工具描述", "parameters": {...}}}, "action": "tool_call|respond|ask_clarification", "content": "思考内容"} 或 {"action": "respond|ask_clarification", "content": "回答或澄清内容"}'
 
     const provider = this.getCurrentProvider()
     if (provider) {

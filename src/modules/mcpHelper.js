@@ -10,6 +10,9 @@ class MCPHelper {
   }
 
   registerDefaultEndpoints() {
+    // 注册获取棋盘上下文端点
+    this.registerGetBoardContext();
+
     this.registerEndpoint({
       id: 'katago-analysis',
       name: 'KataGo分析',
@@ -1095,6 +1098,67 @@ class MCPHelper {
       mcpRequest.mcp.tool.parameters || {},
       gameContext
     )
+  }
+
+  /**
+   * 注册获取棋盘上下文端点
+   */
+  registerGetBoardContext() {
+    this.registerEndpoint({
+      id: 'get-board-context',
+      name: '获取棋盘上下文',
+      description: '获取当前棋局的棋盘上下文信息，包含所有着法历史',
+      type: 'builtin', // 标记为内置工具
+      parameters: {
+        type: 'object',
+        properties: {
+          includeFullHistory: {
+            type: 'boolean',
+            description: '是否包含完整的棋局历史',
+            default: true
+          }
+        }
+      },
+      handler: this.handleGetBoardContext.bind(this)
+    })
+  }
+
+  /**
+   * 处理获取棋盘上下文的请求
+   */
+  async handleGetBoardContext(params, gameContext) {
+    try {
+      let {gameTrees, gameIndex, treePosition} = gameContext
+      let tree = gameTrees[gameIndex]
+      let currentNode = tree.get(treePosition)
+      let moves = []
+      let node = currentNode
+
+      // 收集所有着法历史
+      while (node) {
+        if (node.data.B) moves.unshift(`B[${node.data.B.join('][')}]`)
+        if (node.data.W) moves.unshift(`W[${node.data.W.join('][')}]`)
+        node = tree.get(node.parentId)
+      }
+
+      // 构建boardContext字符串
+      const boardContext = moves.join('\n')
+      
+      return {
+        success: true,
+        data: {
+          boardContext: boardContext,
+          moveCount: moves.length,
+          currentNodeId: currentNode.id
+        }
+      }
+    } catch (error) {
+      console.error('获取棋盘上下文失败:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
   }
 
   getAvailableEndpoints() {

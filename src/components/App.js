@@ -183,15 +183,15 @@ class App extends Component {
     const handleWindowClose = () => {
       if (this.closeWindow) return false
 
-      if (sabaki.askForSave()) {
-        sabaki.detachEngines(
-          this.state.attachedEngineSyncers.map(syncer => syncer.id)
-        )
+      // if (sabaki.askForSave()) {
+      //   sabaki.detachEngines(
+      //     this.state.attachedEngineSyncers.map(syncer => syncer.id)
+      //   )
 
-        gtplogger.close()
-        this.closeWindow = true
-        return true
-      }
+      //   gtplogger.close()
+      //   this.closeWindow = true
+      //   return true
+      // }
       return false
     }
 

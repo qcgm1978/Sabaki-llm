@@ -37,18 +37,6 @@ class AIHelper {
   }
 
   async sendLLMMessage(message, gameContext) {
-    let {gameTrees, gameIndex, treePosition} = gameContext
-    let tree = gameTrees[gameIndex]
-    let currentNode = tree.get(treePosition)
-    let moves = []
-    let node = currentNode
-
-    while (node) {
-      if (node.data.B) moves.unshift(`B[${node.data.B.join('][')}]`)
-      if (node.data.W) moves.unshift(`W[${node.data.W.join('][')}]`)
-      node = tree.get(node.parentId)
-    }
-
     let userMessage = message
     let parameters = {}
 
@@ -63,7 +51,8 @@ class AIHelper {
       fullMessage = `${userMessage}\n\n工具参数: ${paramsStr}`
     }
 
-    let boardContext = moves.join('\n')
+    // 通过agentOrchestrator获取boardContext，由它决定是否发送该数据
+    let boardContext = await agentOrchestrator.getBoardContext(gameContext)
 
     let gameInfo = ''
     let rootNode = tree.root
