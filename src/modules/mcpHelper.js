@@ -11,7 +11,45 @@ class MCPHelper {
 
   registerDefaultEndpoints() {
     // 注册获取棋盘上下文端点
-    this.registerGetBoardContext();
+    this.registerGetBoardContext()
+
+    this.registerEndpoint({
+      id: 'get-game-metadata',
+      name: '获取棋局元信息',
+      description: '提取当前棋局的元信息，如赛事、选手、等级、规则等',
+      type: 'info_retrieval',
+      parameters: {
+        type: 'object',
+        properties: {
+          includeEmptyFields: {
+            type: 'boolean',
+            description: '是否包含空字段',
+            default: false
+          }
+        }
+      },
+      handler: this.handleGetGameMetadata.bind(this)
+    })
+
+    this.registerEndpoint({
+      id: 'get-game-info',
+      name: '获取棋局详细信息',
+      description:
+        '提取当前棋局的详细信息，包括赛事、选手、等级、规则等，并以格式化字符串返回',
+      type: 'info_retrieval',
+      parameters: {
+        type: 'object',
+        properties: {
+          format: {
+            type: 'string',
+            description: '返回格式，可以是text或object',
+            enum: ['text', 'object'],
+            default: 'text'
+          }
+        }
+      },
+      handler: this.handleGetGameInfo.bind(this)
+    })
 
     this.registerEndpoint({
       id: 'katago-analysis',
@@ -1108,7 +1146,7 @@ class MCPHelper {
       id: 'get-board-context',
       name: '获取棋盘上下文',
       description: '获取当前棋局的棋盘上下文信息，包含所有着法历史',
-      type: 'builtin', // 标记为内置工具
+      type: 'info_retrieval', // 更新为信息检索类型
       parameters: {
         type: 'object',
         properties: {
@@ -1121,6 +1159,158 @@ class MCPHelper {
       },
       handler: this.handleGetBoardContext.bind(this)
     })
+  }
+
+  /**
+   * 处理获取棋局元信息的请求
+   */
+  async handleGetGameMetadata(params, gameContext) {
+    try {
+      const {includeEmptyFields = false} = params || {}
+
+      // 获取当前游戏树
+      const tree =
+        gameContext?.gameTrees?.[gameContext.gameIndex] ||
+        sabaki?.state?.gameTrees?.[sabaki.state.gameIndex]
+      if (!tree || !tree.root) {
+        return {success: false, error: '没有找到当前棋局'}
+      }
+
+      const rootNode = tree.root
+      const metadata = {}
+      const fieldMapping = {
+        GN: '赛事',
+        PB: '黑方',
+        PW: '白方',
+        BR: '黑方等级',
+        WR: '白方等级',
+        KM: '贴目',
+        RU: '规则',
+        SZ: '棋盘大小',
+        HA: '让子数',
+        RE: '结果'
+      }
+
+      // 提取元信息
+      Object.entries(fieldMapping).forEach(([key, label]) => {
+        if (rootNode.data[key]) {
+          metadata[key] = {
+            label: label,
+            value: rootNode.data[key]
+          }
+        } else if (includeEmptyFields) {
+          metadata[key] = {
+            label: label,
+            value: null
+          }
+        }
+      })
+
+      return {
+        success: true,
+        data: {
+          metadata: metadata,
+          hasMetadata: Object.keys(metadata).length > 0,
+          metadataCount: Object.keys(metadata).length
+        }
+      }
+    } catch (error) {
+      console.error('获取棋局元信息失败:', error)
+      return {
+        success: false,
+        error: error.message || '获取棋局元信息失败'
+      }
+    }
+  }
+
+  /**
+   * 处理获取棋局详细信息的请求
+   */
+  async handleGetGameInfo(params, gameContext) {
+    try {
+      const {format = 'text'} = params || {}
+
+      // 获取当前游戏树
+      const tree =
+        gameContext?.gameTrees?.[gameContext.gameIndex] ||
+        sabaki?.state?.gameTrees?.[sabaki.state.gameIndex]
+
+      if (!tree || !tree.root || !tree.root.data) {
+        return {
+          success: false,
+          error: '没有找到当前棋局或棋局数据'
+        }
+      }
+
+      const rootNode = tree.root
+      let gameInfo = ''
+      let metaInfo = []
+
+      // 提取棋局元信息
+      if (rootNode.data.GN) metaInfo.push(`赛事: ${rootNode.data.GN}`)
+      if (rootNode.data.PB) metaInfo.push(`黑方: ${rootNode.data.PB}`)
+      if (rootNode.data.PW) metaInfo.push(`白方: ${rootNode.data.PW}`)
+      if (rootNode.data.BR) metaInfo.push(`黑方等级: ${rootNode.data.BR}`)
+      if (rootNode.data.WR) metaInfo.push(`白方等级: ${rootNode.data.WR}`)
+      if (rootNode.data.KM) metaInfo.push(`贴目: ${rootNode.data.KM}`)
+      if (rootNode.data.RU) metaInfo.push(`规则: ${rootNode.data.RU}`)
+      if (rootNode.data.SZ) metaInfo.push(`棋盘大小: ${rootNode.data.SZ}`)
+      if (rootNode.data.HA) metaInfo.push(`让子数: ${rootNode.data.HA}`)
+      if (rootNode.data.RE) metaInfo.push(`结果: ${rootNode.data.RE}`)
+
+      if (format === 'text') {
+        // 返回格式化文本
+        if (metaInfo.length > 0) {
+          gameInfo = '棋局信息:\n' + metaInfo.join('\n')
+        } else {
+          gameInfo = '未找到棋局元信息'
+        }
+
+        return {
+          success: true,
+          content: gameInfo
+        }
+      } else {
+        // 返回对象格式
+        const metadata = {}
+        const fieldMapping = {
+          GN: '赛事',
+          PB: '黑方',
+          PW: '白方',
+          BR: '黑方等级',
+          WR: '白方等级',
+          KM: '贴目',
+          RU: '规则',
+          SZ: '棋盘大小',
+          HA: '让子数',
+          RE: '结果'
+        }
+
+        Object.entries(fieldMapping).forEach(([key, label]) => {
+          if (rootNode.data[key]) {
+            metadata[key] = {
+              label: label,
+              value: rootNode.data[key]
+            }
+          }
+        })
+
+        return {
+          success: true,
+          data: {
+            metadata: metadata,
+            hasMetadata: Object.keys(metadata).length > 0,
+            metadataCount: Object.keys(metadata).length
+          }
+        }
+      }
+    } catch (error) {
+      console.error('获取棋局详细信息失败:', error)
+      return {
+        success: false,
+        error: error.message || '获取棋局详细信息失败'
+      }
+    }
   }
 
   /**
@@ -1143,7 +1333,7 @@ class MCPHelper {
 
       // 构建boardContext字符串
       const boardContext = moves.join('\n')
-      
+
       return {
         success: true,
         data: {

@@ -51,34 +51,27 @@ class AIHelper {
       fullMessage = `${userMessage}\n\n工具参数: ${paramsStr}`
     }
 
-    // 通过agentOrchestrator获取boardContext，由它决定是否发送该数据
     let boardContext = await agentOrchestrator.getBoardContext(gameContext)
 
+    // 使用get-game-info工具获取棋局信息
     let gameInfo = ''
-    let rootNode = tree.root
-    if (rootNode && rootNode.data) {
-      let metaInfo = []
-      if (rootNode.data.GN) metaInfo.push(`赛事: ${rootNode.data.GN}`)
-      if (rootNode.data.PB) metaInfo.push(`黑方: ${rootNode.data.PB}`)
-      if (rootNode.data.PW) metaInfo.push(`白方: ${rootNode.data.PW}`)
-      if (rootNode.data.BR) metaInfo.push(`黑方等级: ${rootNode.data.BR}`)
-      if (rootNode.data.WR) metaInfo.push(`白方等级: ${rootNode.data.WR}`)
-      if (rootNode.data.KM) metaInfo.push(`贴目: ${rootNode.data.KM}`)
-      if (rootNode.data.RU) metaInfo.push(`规则: ${rootNode.data.RU}`)
-      if (rootNode.data.SZ) metaInfo.push(`棋盘大小: ${rootNode.data.SZ}`)
-      if (rootNode.data.HA) metaInfo.push(`让子数: ${rootNode.data.HA}`)
-      if (rootNode.data.RE) metaInfo.push(`结果: ${rootNode.data.RE}`)
-
-      if (metaInfo.length > 0) {
-        gameInfo = '棋局信息:\n' + metaInfo.join('\n') + '\n\n'
-      }
+    const result_tool = await agentOrchestrator._executeTool(
+      {
+        name: 'get-game-info',
+        type: 'info_retrieval',
+        parameters: {format: 'text'}
+      },
+      gameContext
+    )
+    if (result_tool && result_tool.success && result_tool.content) {
+      gameInfo = result_tool.content + '\n\n'
     }
 
     const provider = agentOrchestrator.getCurrentProvider()
     console.log('Selected LLM provider:', provider)
 
     const pre_prompt =
-      '你是一个围棋助手，能够分析棋局、提供建议并回答关于围棋策略的问题。请注意，你必须返回json格式的响应，不要在JSON前后添加任何其他文本（如```json等标记）。\n' +
+      '你是一个围棋助手，能够分析棋局、提供建议并回答关于围棋策略的问题。\n' +
       '\n' +
       '你有两种响应格式可以使用(优先调用工具):\n' +
       '1. 当你需要调用工具分析时，必须使用mcp格式，不要在response中提及工具名称:\n' +
@@ -88,9 +81,6 @@ class AIHelper {
       '{"content":"你的回答内容"}\n' +
       '\n'
 
-    // 工具列表将通过streamDefinition函数内部处理
-
-    // 使用从AgentOrchestrator获取的工具信息构建围棋助手专用prompt
     let prompt =
       pre_prompt +
       '\n' +
@@ -102,7 +92,11 @@ class AIHelper {
       fullMessage
 
     const lang = setting.get('app.lang') == 'zh-Hans' ? 'zh' : 'en'
-    const generator = streamDefinition(prompt, lang)
+    const generator = streamDefinition({
+      topic: prompt,
+      language: lang,
+      responseFormat: 'json'
+    })
 
     console.log('message:', fullMessage)
     let result = ''
@@ -110,7 +104,7 @@ class AIHelper {
       result += chunk
     }
     console.log('raw response:', result)
-    // 处理可能的工具详情请求
+
     const toolDetailResponse = await this.handleToolDetailRequest(
       result,
       gameContext
@@ -140,7 +134,6 @@ class AIHelper {
         gameContext
       )
 
-      // 将工具调用信息和结果合并在同一消息中，并添加颜色区分
       if (resultResponse.content) {
         resultResponse.content = `<div style="color: lightblue;">${toolDescription}</div><div style="color: lightgreen;">${resultResponse.content}</div>`
       }
@@ -148,16 +141,12 @@ class AIHelper {
       return resultResponse
     } else if (parsedResponse.content) {
       return {
+        ...parsedResponse,
         content: parsedResponse.content.replace(/\*{1,3}(.*?)\*{1,3}/g, '$1')
       }
     }
 
-    return {
-      content: (typeof result === 'string' ? result : String(result)).replace(
-        /\*{1,3}(.*?)\*{1,3}/g,
-        '$1'
-      )
-    }
+    return parsedResponse
   }
 
   async sendToolResultToAI(originalMessage, toolResult, gameContext) {
@@ -175,9 +164,7 @@ class AIHelper {
     }
   }
 
-  // 检查LLM响应是否请求工具详情，并处理
   async handleToolDetailRequest(response, gameContext) {
-    // 检查是否包含工具详情请求的模式
     const toolNameMatch = response.match(/我需要了解(.*?)工具的详细参数/i)
 
     if (toolNameMatch && toolNameMatch[1]) {
@@ -185,7 +172,6 @@ class AIHelper {
       const toolDetails = agentOrchestrator.getToolDetails(requestedToolName)
 
       if (toolDetails) {
-        // 构建包含工具详情的提示
         let prompt =
           `以下是您请求的${requestedToolName}工具的详细信息：\n${toolDetails}\n\n` +
           '请基于这些信息，决定下一步操作。如果您想使用该工具，请使用工具调用格式；\n' +
@@ -195,7 +181,7 @@ class AIHelper {
       }
     }
 
-    return null // 不是工具详情请求
+    return null
   }
 
   async callMCPTool(toolId, params, gameContext) {

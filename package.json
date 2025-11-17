@@ -99,11 +99,16 @@
     "@sabaki/shudan": "^1.7.1",
     "argv-split": "^2.0.1",
     "classnames": "^2.2.6",
+    "cross-spawn": "^7.0.6",
     "dolm": "^0.7.3-beta",
-    "fix-path": "<4.0.0",
+    "execa": "^9.6.0",
+    "figures": "^6.1.0",
+    "fix-path": "^5.0.0",
     "iconv-lite": "^0.5.1",
+    "is-plain-obj": "^4.1.0",
+    "is-unicode-supported": "^2.1.0",
     "jschardet": "^3.0.0",
-    "llm-service-provider": "^3.8.3",
+    "llm-service-provider": "^3.8.17",
     "natsort": "^2.0.2",
     "node-fetch": "^3.3.2",
     "pikaday": "^1.8.0",
@@ -111,8 +116,11 @@
     "react-markdown": "^8.0.3",
     "remark-breaks": "^3.0.2",
     "rimraf": "^3.0.2",
+    "shell-env": "^4.0.1",
+    "shell-path": "^2.1.0",
     "uuid": "^7.0.3",
-    "winston": "^3.2.1"
+    "winston": "^3.2.1",
+    "yoctocolors": "^2.1.2"
   },
   "devDependencies": {
     "concurrently": "^7.3.0",
@@ -157,8 +165,10 @@
     "dist:win": "npm run dist:win32 && npm run dist:win64 && npm run dist:win32-portable && npm run dist:win64-portable",
     "i18n": "node ./ci/createI18n.js",
     "sync": "cnpm sync llm-service-provider",
-    "update": "sudo  chmod -R 777 ./ && cnpm update llm-service-provider",
+    "update": "npm install llm-service-provider@latest",
     "watch-dev": "concurrently \"webpack --mode development --watch\" \"wait-on bundle.js && npm run dev\"",
-    "clear-cache": "rimraf node_modules/.cache && echo '缓存已清理'"
+    "clear-cache": "rimraf node_modules/.cache && echo '缓存已清理'",
+    "check-deps": "echo '检查依赖完整性...' && npm ls --depth=0",
+    "validate-deps": "echo '验证依赖安装...' && npm ci"
   }
 }
