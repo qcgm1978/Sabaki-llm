@@ -583,7 +583,7 @@ export class AgentOrchestrator {
       {
         mcp: {
           tool: {
-            name: 'get-board-context',
+            name: '获取棋盘上下文',
             parameters: {includeFullHistory: true}
           }
         }
