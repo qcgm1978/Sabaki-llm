@@ -195,9 +195,10 @@ class App extends Component {
       return false
     }
 
-    // Browser beforeunload event
+    // Browser beforeunload event - only prevent when there are unsaved changes
     window.addEventListener('beforeunload', evt => {
-      if (!handleWindowClose()) {
+      // Only prevent navigation if there are unsaved changes
+      if (sabaki.state.modified) {
         evt.preventDefault()
         evt.returnValue = ' '
       }
