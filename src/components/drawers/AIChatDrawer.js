@@ -19,6 +19,8 @@ export default class AIChatDrawer extends Drawer {
     const savedHistory = JSON.parse(
       localStorage.getItem('sabaki-llm-history') || '[]'
     )
+    const savedHumanCollaboration =
+      localStorage.getItem('sabaki-ai-human-collaboration') === 'true'
     this.state = {
       messages: [],
       input: '',
@@ -34,7 +36,8 @@ export default class AIChatDrawer extends Drawer {
       kataGoSearchTerm: '',
       gtpSearchTerm: '',
       agentStatus: AGENT_STATES.IDLE,
-      executionStats: null
+      executionStats: null,
+      humanCollaborationEnabled: savedHumanCollaboration
     }
 
     // 加载问题分类
@@ -43,6 +46,11 @@ export default class AIChatDrawer extends Drawer {
 
     // 创建编排层实例
     this.agentOrchestrator = new AgentOrchestrator()
+
+    // 设置人机协作配置
+    this.agentOrchestrator.setHumanCollaborationEnabled(
+      this.state.humanCollaborationEnabled
+    )
 
     // 添加状态监听器
     this.agentOrchestrator.addStateListener(
@@ -61,6 +69,10 @@ export default class AIChatDrawer extends Drawer {
     localStorage.setItem(
       'sabaki-llm-history',
       JSON.stringify(this.state.history)
+    )
+    localStorage.setItem(
+      'sabaki-ai-human-collaboration',
+      this.state.humanCollaborationEnabled.toString()
     )
 
     // 清理监听器
@@ -825,6 +837,37 @@ export default class AIChatDrawer extends Drawer {
               title: t('Configure LLM API Keys…')
             },
             '🔑'
+          ),
+          h(
+            'button',
+            {
+              onClick: () => {
+                const newValue = !this.state.humanCollaborationEnabled
+                this.setState({humanCollaborationEnabled: newValue})
+                localStorage.setItem(
+                  'sabaki-ai-human-collaboration',
+                  newValue.toString()
+                )
+              },
+              class: `drawer-action ${
+                this.state.humanCollaborationEnabled ? 'active' : ''
+              }`,
+              title: t(
+                this.state.humanCollaborationEnabled
+                  ? 'Disable Human Collaboration'
+                  : 'Enable Human Collaboration'
+              ),
+              style: {
+                backgroundColor: this.state.humanCollaborationEnabled
+                  ? '#4a9eff'
+                  : 'transparent',
+                color: this.state.humanCollaborationEnabled
+                  ? 'white'
+                  : 'inherit',
+                borderRadius: '3px'
+              }
+            },
+            this.state.humanCollaborationEnabled ? '👤✓' : '👤'
           ),
           h(
             'button',

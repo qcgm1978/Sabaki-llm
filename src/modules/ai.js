@@ -6,6 +6,9 @@ import sabaki from './sabaki.js'
 import agentOrchestrator from './agentOrchestrator.js'
 
 class AIHelper {
+  constructor() {
+    this.humanCollaborationEnabled = false
+  }
   formatParameters(parameters) {
     let result = []
 
@@ -117,6 +120,34 @@ class AIHelper {
     if (parsedResponse.mcp && parsedResponse.mcp.tool) {
       let toolDescription = `${provider}: ${parsedResponse.mcp.tool.description}`
 
+      // 检查是否为人机协作工具
+      const toolType =
+        parsedResponse.mcp.tool.type ||
+        (await this.getToolType(parsedResponse.mcp.tool.name))
+
+      // 人机协作工具处理逻辑
+      if (
+        toolType === 'HUMAN_COLLABORATION' ||
+        (this.humanCollaborationEnabled &&
+          parsedResponse.mcp.tool.parameters?.humanCollaborationRequired)
+      ) {
+        // 提示用户进行操作
+        const userAction = await this.promptUserAction(toolDescription)
+
+        // 如果用户取消操作
+        if (!userAction) {
+          return {
+            content: `<div style="color: lightblue;">${toolDescription}</div><div style="color: yellow;">用户取消了操作</div>`
+          }
+        }
+
+        // 将用户操作结果添加到参数中
+        parsedResponse.mcp.tool.parameters = {
+          ...parsedResponse.mcp.tool.parameters,
+          userAction: userAction
+        }
+      }
+
       let toolResult = await mcpHelper.handleMCPRequest(
         parsedResponse,
         gameContext
@@ -195,6 +226,59 @@ class AIHelper {
     } catch (err) {
       return {error: err.message}
     }
+  }
+
+  // 获取工具类型
+  async getToolType(toolName) {
+    try {
+      // 通过agentOrchestrator获取工具类型信息
+      const toolDetails = agentOrchestrator.getToolDetails(toolName)
+      if (toolDetails && toolDetails.type) {
+        return toolDetails.type
+      }
+
+      // 如果没有获取到类型，从可用工具列表中查找
+      const availableTools = await agentOrchestrator.getAvailableTools()
+      const tool = availableTools.find(
+        t => t.name === toolName || t.id === toolName
+      )
+      return tool ? tool.type : 'EXECUTION' // 默认返回EXECUTION类型
+    } catch (err) {
+      console.error('获取工具类型失败:', err)
+      return 'EXECUTION' // 出错时默认返回EXECUTION类型
+    }
+  }
+
+  // 设置人机协作开关
+  setHumanCollaborationEnabled(enabled) {
+    this.humanCollaborationEnabled = enabled
+  }
+
+  // 提示用户进行操作
+  async promptUserAction(toolDescription) {
+    return new Promise(resolve => {
+      // 使用Electron的对话框提示用户
+      remote.dialog
+        .showMessageBox({
+          type: 'question',
+          title: '人机协作',
+          message: `需要您的操作以完成: ${toolDescription}`,
+          detail:
+            '请在棋盘上进行相应操作，然后确认。如果您想取消，请选择取消按钮。',
+          buttons: ['确认操作', '取消'],
+          defaultId: 0,
+          cancelId: 1
+        })
+        .then(result => {
+          if (result.response === 0) {
+            // 用户确认，可以获取当前棋盘状态作为用户操作结果
+            const currentBoardState = sabaki.state.branch.currentNode.properties
+            resolve(currentBoardState)
+          } else {
+            resolve(null)
+          }
+        })
+    })
   }
 }
 

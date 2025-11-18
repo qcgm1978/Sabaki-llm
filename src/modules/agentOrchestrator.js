@@ -50,6 +50,7 @@ export class AgentOrchestrator {
       retryCount: 0,
       maxRetries: 3
     }
+    this.humanCollaborationEnabled = false
 
     // 工具控制配置
     this.toolConfig = {
@@ -451,6 +452,15 @@ export class AgentOrchestrator {
   async _executeAgentTool(toolInfo) {
     // 获取gameContext，添加空值检查
     const gameContext = this.agentState.conversationContext?.gameContext || null
+
+    // 如果启用了人机协作，将配置传递给工具参数
+    if (this.humanCollaborationEnabled) {
+      if (!toolInfo.parameters) {
+        toolInfo.parameters = {}
+      }
+      toolInfo.parameters.humanCollaborationRequired = true
+    }
+
     // 智能体工具默认也走MCP请求流程，可以在这里添加特定的智能体工具处理
     return await mcpHelper.handleMCPRequest(
       {
@@ -460,6 +470,15 @@ export class AgentOrchestrator {
       },
       this.agentState.conversationContext.gameContext
     )
+  }
+
+  // 设置人机协作开关
+  setHumanCollaborationEnabled(enabled) {
+    this.humanCollaborationEnabled = enabled
+    // 确保AIHelper也使用相同的设置
+    if (typeof ai.setHumanCollaborationEnabled === 'function') {
+      ai.setHumanCollaborationEnabled(enabled)
+    }
   }
 
   _validateToolParameters(toolInfo) {

@@ -2,9 +2,6 @@ import * as remote from '@electron/remote'
 import aiHelper from './ai.js'
 import {ApiKeyManager} from 'llm-service-provider'
 
-/**
- * AI管理模块，处理AI相关功能
- */
 class AIManager {
   constructor(sabaki) {
     this.sabaki = sabaki
@@ -12,8 +9,6 @@ class AIManager {
   }
 
   openApiKeyManager() {
-    // 由于ApiKeyManager是React组件，我们需要使用React或Preact进行渲染
-    // 创建一个临时容器来渲染API密钥管理器
     const container = document.createElement('div')
     container.style.position = 'fixed'
     container.style.top = '0'
@@ -28,14 +23,12 @@ class AIManager {
 
     document.body.appendChild(container)
 
-    // 尝试动态导入React和render方法，避免直接依赖
     import('react')
       .then(React => {
         import('react-dom/client')
           .then(ReactDOM => {
-            // 创建React根并渲染ApiKeyManager组件
             const root = ReactDOM.createRoot(container)
-            // 定义关闭处理函数
+
             const handleClose = () => {
               root.unmount()
               document.body.removeChild(container)
@@ -46,7 +39,7 @@ class AIManager {
                 isOpen: true,
                 onSave: key => {
                   console.log('API key saved:', key)
-                  // 将API密钥保存到设置中以持久化
+
                   this.setting.set('ai.llm.apiKey', key)
                 },
                 showCloseButton: false,
@@ -58,7 +51,6 @@ class AIManager {
               })
             )
 
-            // 添加全局点击事件监听，如果点击容器外部则关闭
             container.addEventListener('click', e => {
               if (e.target === container) {
                 handleClose()
@@ -66,17 +58,14 @@ class AIManager {
             })
           })
           .catch(() => {
-            // 如果React DOM不可用，使用简化版本
             this.renderSimplifiedApiKeyManager(container)
           })
       })
       .catch(() => {
-        // 如果React不可用，使用简化版本
         this.renderSimplifiedApiKeyManager(container)
       })
   }
 
-  // 备用的简化版API密钥管理器
   renderSimplifiedApiKeyManager(container) {
     const apiKeyManager = document.createElement('div')
     apiKeyManager.innerHTML = `
@@ -94,11 +83,7 @@ class AIManager {
     })
   }
 
-  /**
-   * 发送消息到DeepSeek API
-   */
   async sendLLMMessage(message, gameContext) {
-    // 调用AI助手模块处理消息，使用llm-service-provider
     if (!gameContext) {
       gameContext = {
         gameTrees: this.sabaki.state.gameTrees,
@@ -107,16 +92,12 @@ class AIManager {
       }
     }
 
-    // 这里将调用更新后的aiHelper方法
     return await aiHelper.sendLLMMessage(message, gameContext)
   }
 
-  // 直接添加AI消息到聊天抽屉
   addAIMessage(content) {
-    // 打开AI聊天抽屉
     this.sabaki.openDrawer('ai-chat')
 
-    // 通知AIChatDrawer组件添加新消息
     this.sabaki.emit('ai.message.add', {role: 'ai', content: content})
   }
 }
