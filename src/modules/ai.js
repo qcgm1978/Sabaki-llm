@@ -117,6 +117,23 @@ class AIHelper {
     }
 
     let parsedResponse = JSON.parse(result.replace(/```json|```/g, ''))
+
+    // 支持新的工具调用格式
+    if (parsedResponse.action === 'tool_call' && parsedResponse.tool) {
+      // 转换为mcp格式
+      parsedResponse = {
+        mcp: {
+          tool: {
+            name: parsedResponse.tool.name,
+            description:
+              parsedResponse.tool.description ||
+              `调用工具: ${parsedResponse.tool.name}`,
+            parameters: parsedResponse.tool.parameters || {}
+          }
+        }
+      }
+    }
+
     if (parsedResponse.mcp && parsedResponse.mcp.tool) {
       let toolDescription = `${provider}: ${parsedResponse.mcp.tool.description}`
 
