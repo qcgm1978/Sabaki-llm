@@ -4,6 +4,7 @@ import ai from './ai.js'
 import mcpHelper from './mcpHelper.js'
 import sabaki from './sabaki.js'
 import {getSelectedServiceProvider} from 'llm-service-provider'
+import {getLiveReports} from '../components/golaxy.js'
 
 export const AGENT_STATES = {
   IDLE: 'idle',
@@ -79,6 +80,63 @@ export class AgentOrchestrator {
     this.stateListeners = []
 
     this.errorHandlers = []
+
+    // 注册Golaxy直播报告工具
+    this._registerGolaxyLiveReportsTool()
+  }
+
+  // 注册Golaxy直播报告工具的方法
+  _registerGolaxyLiveReportsTool() {
+    const tool = {
+      id: 'get-golaxy-live-reports',
+      name: '获取Golaxy直播报告',
+      description: '获取Golaxy平台的实时和历史围棋比赛直播数据',
+      type: TOOL_TYPES.SYSTEM_INTEGRATION,
+      parameters: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            description:
+              '要获取的报告类型，可以是"live"（直播）或"history"（历史）',
+            enum: ['live', 'history'],
+            default: 'live'
+          },
+          limit: {
+            type: 'number',
+            description: '返回的比赛数量限制',
+            default: 10
+          }
+        }
+      },
+      async handler(params = {}) {
+        try {
+          const {type = 'live', limit = 10} = params
+          const reports = await getLiveReports(
+            type === 'live' ? 'live' : 'history',
+            limit
+          )
+          return {
+            success: true,
+            data: reports,
+            content: `成功获取${type === 'live' ? '直播' : '历史'}比赛数据，共${
+              reports.length
+            }场比赛`
+          }
+        } catch (error) {
+          console.error('获取Golaxy直播报告失败:', error)
+          return {
+            success: false,
+            error: error.message || '获取Golaxy直播报告失败'
+          }
+        }
+      }
+    }
+
+    // 注册到MCP助手
+    if (mcpHelper.default && mcpHelper.default.registerEndpoint) {
+      mcpHelper.default.registerEndpoint(tool)
+    }
   }
 
   addStateListener(listener) {
@@ -767,17 +825,23 @@ export class AgentOrchestrator {
   }
 
   _buildThoughtPrompt() {
-    const toolsList = this.formatToolsList(false, true, true)
+    const toolsList = this.formatToolsList(true, true, true)
     const {lastToolResult} = this.agentState.conversationContext || {}
 
     let prompt = `你是一个围棋助手，需要分析最新的用户请求和工具执行结果，然后决定下一步操作。\n\n`
 
     prompt += `用户历史消息:\n`
-    this.agentState.history.forEach(item => {
-      if (item.type === 'user') {
-        prompt += `- ${item.content}\n`
-      }
-    })
+    // 只添加除了最后一条以外的用户消息，避免重复包含当前问题
+    const userMessages = this.agentState.history.filter(
+      item => item.type === 'user'
+    )
+    for (let i = 0; i < userMessages.length - 1; i++) {
+      prompt += `- ${userMessages[i].content}\n`
+    }
+    // 单独添加当前问题，并标记为最新
+    if (userMessages.length > 0) {
+      prompt += `- [最新] ${userMessages[userMessages.length - 1].content}\n`
+    }
 
     if (lastToolResult) {
       prompt += `\n最近的工具执行结果:\n${JSON.stringify(
