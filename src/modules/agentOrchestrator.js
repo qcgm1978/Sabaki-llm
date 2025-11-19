@@ -687,7 +687,41 @@ export class AgentOrchestrator {
     return ''
   }
 
-  formatToolsList(detailed = false, includePrefix = false, grouped = true) {
+  formatToolsList(
+    detailed = false,
+    includePrefix = false,
+    grouped = true,
+    format = 'text'
+  ) {
+    const availableTools = this.getAvailableTools()
+
+    // 返回JSON格式的工具列表（MCP协议要求）
+    if (format === 'json') {
+      const toolsJson = availableTools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters || {}
+      }))
+
+      if (grouped) {
+        const toolsByType = {}
+        availableTools.forEach(tool => {
+          if (!toolsByType[tool.type]) {
+            toolsByType[tool.type] = []
+          }
+          toolsByType[tool.type].push({
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters || {}
+          })
+        })
+        return toolsByType
+      }
+
+      return toolsJson
+    }
+
+    // 原有文本格式的实现（向后兼容）
     if (grouped) {
       const toolsByType = this.getToolsByType()
       let toolsList = ''
@@ -727,8 +761,6 @@ export class AgentOrchestrator {
       return includePrefix ? `你可以使用以下工具:\n${toolsList}` : toolsList
     } else {
       // 兼容原有格式，不分组显示
-      const availableTools = this.getAvailableTools()
-
       if (detailed) {
         const toolsList = availableTools
           .map(
@@ -825,10 +857,23 @@ export class AgentOrchestrator {
   }
 
   _buildThoughtPrompt() {
-    const toolsList = this.formatToolsList(true, true, true)
+    // 使用MCP协议要求的JSON格式输出工具列表
+    const toolsListJson = this.formatToolsList(true, false, true, 'json')
     const {lastToolResult} = this.agentState.conversationContext || {}
 
-    let prompt = `你是一个围棋助手，需要分析最新的用户请求和工具执行结果，然后决定下一步操作。\n\n`
+    // 构建符合MCP协议的提示
+    const mcpPrompt = {
+      role: 'system',
+      content:
+        '你是一个围棋助手，需要分析最新的用户请求和工具执行结果，然后决定下一步操作。',
+      tools: toolsListJson
+    }
+
+    let prompt = `MCP工具列表 (JSON格式):\n${JSON.stringify(
+      toolsListJson,
+      null,
+      2
+    )}\n\n`
 
     prompt += `用户历史消息:\n`
     // 只添加除了最后一条以外的用户消息，避免重复包含当前问题
@@ -848,10 +893,8 @@ export class AgentOrchestrator {
         lastToolResult,
         null,
         2
-      )}\n`
+      )}\n\n`
     }
-
-    prompt += `\n${toolsList}\n\n`
 
     prompt += `请你根据以上信息，决定是调用工具、直接回答用户还是追问用户。\n\n`
 

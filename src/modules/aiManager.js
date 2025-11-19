@@ -1,6 +1,7 @@
 import * as remote from '@electron/remote'
 import aiHelper from './ai.js'
 import {ApiKeyManager} from 'llm-service-provider'
+import {shell} from 'electron'
 
 class AIManager {
   constructor(sabaki) {
@@ -56,6 +57,27 @@ class AIManager {
                 handleClose()
               }
             })
+
+            // 使用setTimeout确保React组件完全渲染后添加事件处理
+            setTimeout(() => {
+              const apiKeyManagerElement =
+                container.querySelector('.api-key-manager') ||
+                container.firstChild
+              if (apiKeyManagerElement) {
+                apiKeyManagerElement.addEventListener(
+                  'click',
+                  e => {
+                    // 确保链接点击不会被容器的点击事件影响
+                    if (e.target.tagName === 'A') {
+                      // 允许链接正常工作
+                      e.stopPropagation()
+                      shell.openExternal(e.target.href)
+                    }
+                  },
+                  true
+                )
+              }
+            }, 100)
           })
           .catch(() => {
             this.renderSimplifiedApiKeyManager(container)
