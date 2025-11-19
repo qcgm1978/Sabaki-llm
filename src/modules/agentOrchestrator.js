@@ -488,7 +488,7 @@ export class AgentOrchestrator {
         break
     }
 
-    return this._processToolResult(toolResult)
+    return this._processToolResult(toolResult, validatedToolInfo.name)
   }
 
   // 执行内置工具的方法
@@ -570,11 +570,35 @@ export class AgentOrchestrator {
     return validatedParams
   }
 
-  _processToolResult(toolResult) {
+  _processToolResult(toolResult, toolName) {
     if (toolResult.error) {
       return {
         shouldContinue: false,
         error: toolResult.error
+      }
+    }
+
+    // 如果指定了工具名称，尝试验证结果是否符合outputSchema
+    if (toolName) {
+      const availableTools = this.getAvailableTools()
+      const tool = availableTools.find(t => t.name === toolName)
+
+      if (tool && tool.outputSchema) {
+        // 基本验证：检查是否包含必要的字段
+        if (
+          tool.outputSchema.required &&
+          Array.isArray(tool.outputSchema.required)
+        ) {
+          const missingFields = tool.outputSchema.required.filter(
+            field => !toolResult.hasOwnProperty(field)
+          )
+          if (missingFields.length > 0) {
+            console.warn(
+              `工具${toolName}的结果缺少必要字段: ${missingFields.join(', ')}`
+            )
+            // 这里只警告，不阻止返回结果，保持向后兼容性
+          }
+        }
       }
     }
 
@@ -687,7 +711,7 @@ export class AgentOrchestrator {
     return ''
   }
 
-  // MCP协议要求始终使用JSON格式的工具列表
+  // MCP协议要求始终使用JSON格式的工具列表，包含outputSchema
   formatToolsList(detailed = false, includePrefix = false, grouped = true) {
     const availableTools = this.getAvailableTools()
 
@@ -701,7 +725,8 @@ export class AgentOrchestrator {
         toolsByType[tool.type].push({
           name: tool.name,
           description: tool.description,
-          parameters: tool.parameters || {}
+          parameters: tool.parameters || {},
+          outputSchema: tool.outputSchema || {}
         })
       })
       return toolsByType
@@ -711,7 +736,8 @@ export class AgentOrchestrator {
     return availableTools.map(tool => ({
       name: tool.name,
       description: tool.description,
-      parameters: tool.parameters || {}
+      parameters: tool.parameters || {},
+      outputSchema: tool.outputSchema || {}
     }))
   }
 
@@ -819,6 +845,7 @@ export class AgentOrchestrator {
     prompt += `输出格式要求:\n`
     prompt += `1. 如果决定调用工具，包含以下字段:\n`
     prompt += `   {"action":"tool_call","tool":{"name":"工具名称","parameters":{参数对象}}}\n`
+    prompt += `   请注意: 每个工具都提供了outputSchema，描述了工具返回结果的预期结构。请根据outputSchema解释工具结果。\n`
     prompt += `2. 如果决定直接回答用户，\n`
     prompt += `   {"action":"respond","content":"回答内容"}\n`
     prompt += `3. 如果需要追问用户，\n`
