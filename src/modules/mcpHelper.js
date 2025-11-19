@@ -815,30 +815,51 @@ class MCPHelper {
               }))
           }
 
-          if (
-            !sabaki ||
-            !sabaki.state ||
-            !sabaki.state.attachedEngineSyncers ||
-            !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
-          ) {
-            syncer.stop()
-          }
-          resolve({data: result})
+          // 确保分析完成后重置engineSyncer的busy状态
+          // 发送一个简单的命令来触发busy状态更新
+          syncer.controller.sendCommand({name: 'protocol_version'}).then(() => {
+            if (
+              !sabaki ||
+              !sabaki.state ||
+              !sabaki.state.attachedEngineSyncers ||
+              !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
+            ) {
+              syncer.stop()
+            }
+            resolve({data: result})
+          })
         }
       })
 
       syncer.queueCommand(analyzeCommand)
 
       setTimeout(() => {
-        if (
-          !sabaki ||
-          !sabaki.state ||
-          !sabaki.state.attachedEngineSyncers ||
-          !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
-        ) {
-          syncer.stop()
-        }
-        resolve({error: '分析超时'})
+        // 超时情况下也发送protocol_version命令来重置busy状态
+        syncer.controller
+          .sendCommand({name: 'protocol_version'})
+          .then(() => {
+            if (
+              !sabaki ||
+              !sabaki.state ||
+              !sabaki.state.attachedEngineSyncers ||
+              !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
+            ) {
+              syncer.stop()
+            }
+            resolve({error: '分析超时'})
+          })
+          .catch(() => {
+            // 如果命令发送失败，直接处理超时
+            if (
+              !sabaki ||
+              !sabaki.state ||
+              !sabaki.state.attachedEngineSyncers ||
+              !sabaki.state.attachedEngineSyncers.find(s => s.id === syncer.id)
+            ) {
+              syncer.stop()
+            }
+            resolve({error: '分析超时'})
+          })
       }, 100000)
     })
   }

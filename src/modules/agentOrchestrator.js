@@ -687,106 +687,32 @@ export class AgentOrchestrator {
     return ''
   }
 
-  formatToolsList(
-    detailed = false,
-    includePrefix = false,
-    grouped = true,
-    format = 'text'
-  ) {
+  // MCP协议要求始终使用JSON格式的工具列表
+  formatToolsList(detailed = false, includePrefix = false, grouped = true) {
     const availableTools = this.getAvailableTools()
 
-    // 返回JSON格式的工具列表（MCP协议要求）
-    if (format === 'json') {
-      const toolsJson = availableTools.map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters || {}
-      }))
-
-      if (grouped) {
-        const toolsByType = {}
-        availableTools.forEach(tool => {
-          if (!toolsByType[tool.type]) {
-            toolsByType[tool.type] = []
-          }
-          toolsByType[tool.type].push({
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.parameters || {}
-          })
-        })
-        return toolsByType
-      }
-
-      return toolsJson
-    }
-
-    // 原有文本格式的实现（向后兼容）
+    // 按类型分组返回JSON格式
     if (grouped) {
-      const toolsByType = this.getToolsByType()
-      let toolsList = ''
-
-      // 按类型分组格式化工具列表
-      const typeNames = {
-        [TOOL_TYPES.INFO_RETRIEVAL]: '信息检索工具',
-        [TOOL_TYPES.EXECUTION]: '执行/动作工具',
-        [TOOL_TYPES.SYSTEM_INTEGRATION]: '系统/API集成工具',
-        [TOOL_TYPES.HUMAN_COLLABORATION]: '人机协作工具'
-      }
-
-      Object.entries(toolsByType).forEach(([type, tools]) => {
-        if (tools.length > 0) {
-          toolsList += `\n${typeNames[type]} (${tools.length}个):\n`
-
-          if (detailed) {
-            toolsList += tools
-              .map(
-                tool => `  - 工具名称: ${tool.name}
-    描述: ${tool.description}
-    参数要求: ${
-      tool.parameters ? this._formatParameters(tool.parameters) : '无'
-    }`
-              )
-              .join('\n')
-          } else {
-            toolsList += tools
-              .map(tool => `  - ${tool.name}: ${tool.description}`)
-              .join('\n')
-          }
-
-          toolsList += '\n'
+      const toolsByType = {}
+      availableTools.forEach(tool => {
+        if (!toolsByType[tool.type]) {
+          toolsByType[tool.type] = []
         }
+        toolsByType[tool.type].push({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters || {}
+        })
       })
-
-      return includePrefix ? `你可以使用以下工具:\n${toolsList}` : toolsList
-    } else {
-      // 兼容原有格式，不分组显示
-      if (detailed) {
-        const toolsList = availableTools
-          .map(
-            tool => `
-  - 工具名称: ${tool.name}\n    类型: ${this._getToolTypeName(
-              tool.type
-            )}\n    描述: ${tool.description}\n    参数要求: ${
-              tool.parameters ? this._formatParameters(tool.parameters) : '无'
-            }`
-          )
-          .join('')
-        return includePrefix
-          ? `你可以使用以下MCP工具:\n${toolsList}`
-          : toolsList
-      } else {
-        const toolsList = availableTools
-          .map(
-            tool =>
-              `  - ${tool.name} [${this._getToolTypeName(tool.type)}]: ${
-                tool.description
-              }`
-          )
-          .join('\n')
-        return includePrefix ? `可用工具:\n${toolsList}` : toolsList
-      }
+      return toolsByType
     }
+
+    // 不分组返回JSON格式
+    return availableTools.map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters || {}
+    }))
   }
 
   // 获取工具类型的中文名称
@@ -857,23 +783,15 @@ export class AgentOrchestrator {
   }
 
   _buildThoughtPrompt() {
-    // 使用MCP协议要求的JSON格式输出工具列表
-    const toolsListJson = this.formatToolsList(true, false, true, 'json')
+    // MCP协议要求使用JSON格式的工具列表
+    const toolsListJson = this.formatToolsList(true, false, true)
     const {lastToolResult} = this.agentState.conversationContext || {}
 
     // 构建符合MCP协议的提示
-    const mcpPrompt = {
-      role: 'system',
-      content:
-        '你是一个围棋助手，需要分析最新的用户请求和工具执行结果，然后决定下一步操作。',
-      tools: toolsListJson
-    }
+    let prompt = `你是一个围棋助手，需要分析最新的用户请求和工具执行结果，然后决定下一步操作。\n\n`
 
-    let prompt = `MCP工具列表 (JSON格式):\n${JSON.stringify(
-      toolsListJson,
-      null,
-      2
-    )}\n\n`
+    // MCP工具列表（JSON格式）
+    prompt += `MCP工具列表:\n${JSON.stringify(toolsListJson, null, 2)}\n\n`
 
     prompt += `用户历史消息:\n`
     // 只添加除了最后一条以外的用户消息，避免重复包含当前问题
