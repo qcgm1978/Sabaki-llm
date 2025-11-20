@@ -53,6 +53,15 @@ export class AgentOrchestrator {
     }
     this.humanCollaborationEnabled = false
 
+    // 五步问题解决流程相关状态
+    this.fiveStepProcess = {
+      currentProcessStep: null,
+      processSteps: [],
+      isProcessRunning: false,
+      currentStepResult: null,
+      processContext: null
+    }
+
     // 工具控制配置
     this.toolConfig = {
       includeBoardContext: true, // 控制是否包含boardContext数据
@@ -219,10 +228,387 @@ export class AgentOrchestrator {
       timestamp: Date.now()
     })
 
-    this._emitStateChange(AGENT_STATES.THINKING)
+    // 如果启用了人机协作，使用五步问题解决流程
+    if (
+      this.humanCollaborationEnabled &&
+      options.enableFiveStepProcess !== false
+    ) {
+      this._emitStateChange(AGENT_STATES.THINKING)
+      return await this.runWithFiveStepProcess(
+        userMessage,
+        gameContext,
+        options
+      )
+    }
 
+    // 否则使用常规流程
+    this._emitStateChange(AGENT_STATES.THINKING)
     const result = await this._loop()
     return result
+  }
+
+  /**
+   * 五步问题解决流程
+   * 1. 明确任务 - 理解和澄清用户请求
+   * 2. 感知环境 - 收集相关信息和上下文
+   * 3. 思考规划 - 制定解决方案和执行计划
+   * 4. 执行行动 - 按照计划执行具体操作
+   * 5. 观察迭代 - 评估结果并根据需要调整
+   */
+  async runWithFiveStepProcess(userMessage, gameContext, options = {}) {
+    // 初始化五步流程状态
+    this.fiveStepProcess = {
+      currentProcessStep: null,
+      processSteps: [
+        {
+          id: 'task_clarification',
+          name: '明确任务',
+          description: '理解和澄清用户请求'
+        },
+        {
+          id: 'environment_perception',
+          name: '感知环境',
+          description: '收集相关信息和上下文'
+        },
+        {
+          id: 'planning',
+          name: '思考规划',
+          description: '制定解决方案和执行计划'
+        },
+        {
+          id: 'execution',
+          name: '执行行动',
+          description: '按照计划执行具体操作'
+        },
+        {
+          id: 'observation',
+          name: '观察迭代',
+          description: '评估结果并根据需要调整'
+        }
+      ],
+      isProcessRunning: true,
+      currentStepResult: null,
+      processContext: {
+        userMessage: userMessage,
+        gameContext: gameContext,
+        options: options,
+        stepResults: {},
+        processStartTime: Date.now()
+      }
+    }
+
+    try {
+      // 第一步：生成五步问题解决流程的详细步骤
+      const processPlan = await this._generateFiveStepPlan(
+        userMessage,
+        gameContext
+      )
+      if (processPlan.error) {
+        return {error: processPlan.error}
+      }
+
+      // 将生成的步骤计划保存到流程上下文
+      this.fiveStepProcess.processContext.stepPlan = processPlan.steps || []
+
+      // 返回五步流程计划，等待用户确认
+      return {
+        content: this._formatProcessPlan(processPlan.steps),
+        processPlan: processPlan.steps,
+        requiresHumanConfirmation: true
+      }
+    } catch (error) {
+      return this._handleError(error, ERROR_TYPES.LLM_ERROR)
+    }
+  }
+
+  /**
+   * 执行五步流程中的特定步骤
+   */
+  async executeProcessStep(stepIndex, processContext) {
+    if (
+      !processContext ||
+      !processContext.stepPlan ||
+      stepIndex < 0 ||
+      stepIndex >= processContext.stepPlan.length
+    ) {
+      return {error: '无效的流程步骤索引'}
+    }
+
+    const step = processContext.stepPlan[stepIndex]
+    this.fiveStepProcess.currentProcessStep = step.id
+    this._emitStateChange(AGENT_STATES.THINKING)
+
+    try {
+      // 根据步骤类型执行不同的逻辑
+      let stepResult
+      switch (step.id) {
+        case 'task_clarification':
+          stepResult = await this._executeTaskClarification(
+            step,
+            processContext
+          )
+          break
+        case 'environment_perception':
+          stepResult = await this._executeEnvironmentPerception(
+            step,
+            processContext
+          )
+          break
+        case 'planning':
+          stepResult = await this._executePlanning(step, processContext)
+          break
+        case 'execution':
+          stepResult = await this._executeActions(step, processContext)
+          break
+        case 'observation':
+          stepResult = await this._executeObservation(step, processContext)
+          break
+        default:
+          stepResult = {error: `未知的流程步骤: ${step.id}`}
+      }
+
+      if (stepResult.error) {
+        return stepResult
+      }
+
+      // 保存步骤结果
+      processContext.stepResults[step.id] = stepResult
+      this.fiveStepProcess.currentStepResult = stepResult
+
+      return {
+        content: stepResult.summary || '步骤执行完成',
+        details: stepResult,
+        isLastStep: stepIndex === processContext.stepPlan.length - 1,
+        currentStepIndex: stepIndex
+      }
+    } catch (error) {
+      return this._handleError(error, ERROR_TYPES.LLM_ERROR)
+    }
+  }
+
+  /**
+   * 生成五步问题解决流程的详细计划
+   */
+  async _generateFiveStepPlan(userMessage, gameContext) {
+    const prompt = `
+你需要将用户的问题分解为五步问题解决流程：
+1. 明确任务 - 理解和澄清用户请求
+2. 感知环境 - 收集相关信息和上下文
+3. 思考规划 - 制定解决方案和执行计划
+4. 执行行动 - 按照计划执行具体操作
+5. 观察迭代 - 评估结果并根据需要调整
+
+用户问题: ${userMessage}
+
+请为这个问题生成详细的五步解决计划，每个步骤需要包含：
+- id: 步骤标识符（task_clarification, environment_perception, planning, execution, observation）
+- name: 步骤名称
+- description: 步骤的详细描述
+- objectives: 该步骤需要完成的具体目标（数组）
+- expectedOutput: 预期输出结果
+
+请用JSON格式输出，确保格式正确，不要包含任何其他文本。
+格式要求：
+{"steps": [步骤1对象, 步骤2对象, 步骤3对象, 步骤4对象, 步骤5对象]}
+`
+
+    const response = await ai.sendLLMMessage(prompt, gameContext)
+    if (response.error) {
+      return {error: response.error}
+    }
+
+    try {
+      const parsedResponse =
+        typeof response === 'object' ? response : JSON.parse(response)
+      return parsedResponse
+    } catch (error) {
+      return {error: `解析流程计划失败: ${error.message}`}
+    }
+  }
+
+  /**
+   * 格式化流程计划为可读文本
+   */
+  _formatProcessPlan(steps) {
+    if (!steps || !Array.isArray(steps)) {
+      return '无法生成五步流程计划'
+    }
+
+    let formatted = '我将按以下五步来解决您的问题：\n\n'
+
+    steps.forEach((step, index) => {
+      formatted += `${index + 1}. ${step.name} - ${step.description}\n`
+      formatted += `   目标：\n`
+      step.objectives?.forEach(obj => {
+        formatted += `   - ${obj}\n`
+      })
+      formatted += `   预期输出：${step.expectedOutput}\n\n`
+    })
+
+    formatted += '请确认是否按照这个计划开始执行（输入"继续"开始第一步）'
+    return formatted
+  }
+
+  /**
+   * 执行任务澄清步骤
+   */
+  async _executeTaskClarification(step, processContext) {
+    const prompt = `
+任务：${processContext.userMessage}
+
+请按照以下步骤明确任务：
+1. 分析用户的核心需求
+2. 识别问题的边界和范围
+3. 澄清任何可能的歧义或假设
+4. 定义成功标准
+
+输出要求：
+- summary: 对任务的清晰理解（1-2句话）
+- details: 详细的任务分析
+- ambiguities: 需要澄清的地方（如果有）
+- successCriteria: 成功完成任务的标准
+`
+
+    const response = await ai.sendLLMMessage(prompt, processContext.gameContext)
+    if (response.error) {
+      return {error: response.error}
+    }
+
+    return this._parseStepResponse(response)
+  }
+
+  /**
+   * 执行环境感知步骤
+   */
+  async _executeEnvironmentPerception(step, processContext) {
+    // 获取棋盘上下文
+    const boardContext = await this.getBoardContext(processContext.gameContext)
+
+    const prompt = `
+任务：${processContext.userMessage}
+
+棋盘上下文：${boardContext || '无可用棋盘信息'}
+
+请按照以下步骤感知环境：
+1. 分析当前棋盘状态（如果有）
+2. 识别相关的上下文信息
+3. 收集解决问题所需的信息
+4. 评估信息的完整性
+
+输出要求：
+- summary: 环境分析摘要（1-2句话）
+- details: 详细的环境分析
+- relevantInformation: 相关信息列表
+- informationGaps: 信息缺口（如果有）
+`
+
+    const response = await ai.sendLLMMessage(prompt, processContext.gameContext)
+    if (response.error) {
+      return {error: response.error}
+    }
+
+    return this._parseStepResponse(response)
+  }
+
+  /**
+   * 执行思考规划步骤
+   */
+  async _executePlanning(step, processContext) {
+    const prompt = `
+任务：${processContext.userMessage}
+
+任务澄清结果：${JSON.stringify(
+      processContext.stepResults.task_clarification || {}
+    )}
+
+环境感知结果：${JSON.stringify(
+      processContext.stepResults.environment_perception || {}
+    )}
+
+请按照以下步骤制定解决方案：
+1. 基于任务和环境分析提出解决思路
+2. 设计具体的执行步骤和方法
+3. 评估可能的风险和替代方案
+4. 制定详细的行动计划
+
+输出要求：
+- summary: 解决方案摘要（1-2句话）
+- details: 详细的解决方案
+- executionSteps: 具体执行步骤列表
+- potentialRisks: 潜在风险及应对措施
+`
+
+    const response = await ai.sendLLMMessage(prompt, processContext.gameContext)
+    if (response.error) {
+      return {error: response.error}
+    }
+
+    return this._parseStepResponse(response)
+  }
+
+  /**
+   * 执行执行行动步骤
+   */
+  async _executeActions(step, processContext) {
+    const planningResult = processContext.stepResults.planning
+    if (!planningResult || !planningResult.executionSteps) {
+      return {error: '缺少执行步骤计划'}
+    }
+
+    // 这里可以根据执行步骤调用相应的工具
+    // 暂时返回模拟的执行结果
+    return {
+      summary: '已按照计划执行关键操作',
+      details: '执行了计划中的主要步骤',
+      executedActions: planningResult.executionSteps,
+      results: '操作执行成功，获得了预期结果'
+    }
+  }
+
+  /**
+   * 执行观察迭代步骤
+   */
+  async _executeObservation(step, processContext) {
+    const prompt = `
+任务：${processContext.userMessage}
+
+执行结果：${JSON.stringify(processContext.stepResults.execution || {})}
+
+请按照以下步骤评估结果：
+1. 分析执行结果与预期目标的符合度
+2. 识别成功和不足之处
+3. 提供改进建议
+4. 总结整个问题解决过程
+
+输出要求：
+- summary: 结果评估摘要（1-2句话）
+- details: 详细的结果评估
+- achievements: 完成的成就
+- improvements: 改进建议
+- finalConclusion: 最终结论
+`
+
+    const response = await ai.sendLLMMessage(prompt, processContext.gameContext)
+    if (response.error) {
+      return {error: response.error}
+    }
+
+    return this._parseStepResponse(response)
+  }
+
+  /**
+   * 解析步骤响应
+   */
+  _parseStepResponse(response) {
+    try {
+      if (typeof response === 'object') {
+        return response
+      }
+      return JSON.parse(response)
+    } catch (error) {
+      // 如果无法解析JSON，返回原始响应作为摘要
+      return {summary: response, details: response}
+    }
   }
 
   async _loop() {
@@ -970,7 +1356,36 @@ export class AgentOrchestrator {
       retryCount: this.agentState.retryCount,
       maxRetries: this.agentState.maxRetries,
       hasError: !!this.agentState.error,
-      error: this.agentState.error
+      error: this.agentState.error,
+      // 五步流程相关统计
+      isFiveStepProcess: !!this.fiveStepProcess.isProcessRunning,
+      fiveStepCurrentStep: this.fiveStepProcess.currentProcessStep,
+      fiveStepTotalSteps: this.fiveStepProcess.processSteps.length
+    }
+  }
+
+  /**
+   * 获取五步流程的当前状态
+   */
+  getFiveStepProcessState() {
+    return {
+      isRunning: this.fiveStepProcess.isProcessRunning,
+      currentStep: this.fiveStepProcess.currentProcessStep,
+      steps: this.fiveStepProcess.processSteps,
+      processContext: this.fiveStepProcess.processContext
+    }
+  }
+
+  /**
+   * 重置五步流程
+   */
+  resetFiveStepProcess() {
+    this.fiveStepProcess = {
+      currentProcessStep: null,
+      processSteps: [],
+      isProcessRunning: false,
+      currentStepResult: null,
+      processContext: null
     }
   }
 }

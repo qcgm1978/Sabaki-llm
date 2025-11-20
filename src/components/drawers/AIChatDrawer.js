@@ -37,7 +37,15 @@ export default class AIChatDrawer extends Drawer {
       gtpSearchTerm: '',
       agentStatus: AGENT_STATES.IDLE,
       executionStats: null,
-      humanCollaborationEnabled: savedHumanCollaboration
+      humanCollaborationEnabled: savedHumanCollaboration,
+      // 五步问题解决流程相关状态
+      fiveStepProcessState: {
+        isActive: false,
+        currentStepIndex: -1,
+        processPlan: null,
+        processContext: null,
+        waitingForConfirmation: false
+      }
     }
 
     // 加载问题分类
@@ -215,6 +223,12 @@ export default class AIChatDrawer extends Drawer {
     let message = this.state.input.trim()
     if (!message || this.state.sending) return
 
+    // 检查是否正在五步流程中
+    if (this.state.fiveStepProcessState.isActive) {
+      await this.handleFiveStepProcessMessage(message)
+      return
+    }
+
     let history = [...this.state.history]
     if (!history.includes(message)) {
       history.unshift(message)
@@ -260,19 +274,251 @@ export default class AIChatDrawer extends Drawer {
         agentStatus: AGENT_STATES.IDLE
       })
     } else {
-      const content =
-        response.content || response.result?.content || 'No response'
+      // 检查是否是五步流程计划
+      if (response.requiresHumanConfirmation && response.processPlan) {
+        // 保存流程计划和上下文
+        this.setState({
+          messages: [
+            ...updatedMessages,
+            {
+              role: 'ai',
+              content: response.content,
+              processPlan: response.processPlan
+            }
+          ],
+          fiveStepProcessState: {
+            isActive: true,
+            currentStepIndex: -1,
+            processPlan: response.processPlan,
+            processContext: {
+              userMessage: message,
+              gameContext: gameContext,
+              stepResults: {},
+              stepPlan: response.processPlan
+            },
+            waitingForConfirmation: true
+          },
+          sending: false,
+          agentStatus: AGENT_STATES.IDLE
+        })
+      } else {
+        const content =
+          response.content || response.result?.content || 'No response'
 
-      // 处理棋盘显示指令
-      this.processBoardDisplayInstructions(content)
+        // 处理棋盘显示指令
+        this.processBoardDisplayInstructions(content)
 
+        this.setState({
+          messages: [
+            ...updatedMessages,
+            {
+              role: 'ai',
+              content: content
+            }
+          ],
+          sending: false,
+          agentStatus: AGENT_STATES.IDLE
+        })
+      }
+    }
+  }
+
+  /**
+   * 处理五步流程中的用户输入
+   */
+  handleFiveStepProcessMessage = async message => {
+    const {fiveStepProcessState} = this.state
+
+    let history = [...this.state.history]
+    if (!history.includes(message)) {
+      history.unshift(message)
+      if (history.length > 50) {
+        history = history.slice(0, 50)
+      }
+    }
+
+    const newMessages = [
+      ...this.state.messages,
+      {role: 'user', content: message},
+      {role: 'waiting', id: Date.now()}
+    ]
+
+    this.setState({
+      sending: true,
+      messages: newMessages,
+      input: '',
+      history,
+      currentHistoryIndex: -1
+    })
+
+    try {
+      // 如果正在等待确认
+      if (fiveStepProcessState.waitingForConfirmation) {
+        // 检查用户是否确认执行
+        if (
+          message.toLowerCase().includes('继续') ||
+          message.toLowerCase() === 'y' ||
+          message.toLowerCase() === 'yes'
+        ) {
+          // 开始执行第一步
+          await this.executeProcessStep(0)
+        } else {
+          // 取消流程
+          const updatedMessages = newMessages.filter(
+            msg => msg.role !== 'waiting'
+          )
+          this.setState({
+            fiveStepProcessState: {
+              isActive: false,
+              currentStepIndex: -1,
+              processPlan: null,
+              processContext: null,
+              waitingForConfirmation: false
+            },
+            messages: [
+              ...updatedMessages,
+              {role: 'ai', content: '流程已取消。'}
+            ],
+            sending: false,
+            agentStatus: AGENT_STATES.IDLE
+          })
+        }
+      } else {
+        // 检查用户是否确认执行下一步
+        if (
+          message.toLowerCase().includes('继续') ||
+          message.toLowerCase() === 'y' ||
+          message.toLowerCase() === 'yes'
+        ) {
+          // 执行下一步
+          const nextStepIndex = fiveStepProcessState.currentStepIndex + 1
+          await this.executeProcessStep(nextStepIndex)
+        } else {
+          // 取消流程
+          const updatedMessages = newMessages.filter(
+            msg => msg.role !== 'waiting'
+          )
+          this.setState({
+            fiveStepProcessState: {
+              isActive: false,
+              currentStepIndex: -1,
+              processPlan: null,
+              processContext: null,
+              waitingForConfirmation: false
+            },
+            messages: [
+              ...updatedMessages,
+              {role: 'ai', content: '流程已取消。'}
+            ],
+            sending: false,
+            agentStatus: AGENT_STATES.IDLE
+          })
+        }
+      }
+    } catch (error) {
+      const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
+      this.setState({
+        messages: [
+          ...updatedMessages,
+          {role: 'error', content: error.message || '执行步骤时发生错误'}
+        ],
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
+      })
+    }
+  }
+
+  /**
+   * 执行五步流程中的特定步骤
+   */
+  executeProcessStep = async stepIndex => {
+    const {fiveStepProcessState} = this.state
+    const updatedMessages = this.state.messages.filter(
+      msg => msg.role !== 'waiting'
+    )
+
+    if (
+      !fiveStepProcessState.processContext ||
+      !fiveStepProcessState.processPlan ||
+      stepIndex < 0 ||
+      stepIndex >= fiveStepProcessState.processPlan.length
+    ) {
+      this.setState({
+        messages: [
+          ...updatedMessages,
+          {role: 'error', content: '无效的流程步骤。'}
+        ],
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
+      })
+      return
+    }
+
+    try {
+      // 调用agentOrchestrator执行步骤
+      const stepResult = await this.agentOrchestrator.executeProcessStep(
+        stepIndex,
+        fiveStepProcessState.processContext
+      )
+
+      if (stepResult.error) {
+        this.setState({
+          messages: [
+            ...updatedMessages,
+            {role: 'error', content: `执行步骤时出错: ${stepResult.error}`}
+          ],
+          sending: false,
+          agentStatus: AGENT_STATES.IDLE
+        })
+        return
+      }
+
+      // 格式化步骤结果消息
+      let resultContent = `### ${fiveStepProcessState.processPlan[stepIndex].name}\n\n`
+      resultContent += stepResult.content + '\n\n'
+
+      // 如果不是最后一步，提示用户继续
+      if (!stepResult.isLastStep) {
+        resultContent += `\n步骤 ${stepIndex +
+          1} 已完成。输入"继续"执行下一步：${
+          fiveStepProcessState.processPlan[stepIndex + 1].name
+        }`
+      } else {
+        resultContent += `\n✅ 所有步骤已完成！五步问题解决流程已成功结束。`
+      }
+
+      // 更新状态
       this.setState({
         messages: [
           ...updatedMessages,
           {
             role: 'ai',
-            content: content
+            content: resultContent,
+            stepIndex: stepIndex,
+            stepDetails: stepResult.details
           }
+        ],
+        fiveStepProcessState: {
+          ...fiveStepProcessState,
+          currentStepIndex: stepIndex,
+          waitingForConfirmation: false,
+          isActive: !stepResult.isLastStep // 如果是最后一步，结束流程
+        },
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
+      })
+
+      // 如果是最后一步，重置流程状态
+      if (stepResult.isLastStep) {
+        setTimeout(() => {
+          this.agentOrchestrator.resetFiveStepProcess()
+        }, 1000)
+      }
+    } catch (error) {
+      this.setState({
+        messages: [
+          ...updatedMessages,
+          {role: 'error', content: error.message || '执行步骤时发生错误'}
         ],
         sending: false,
         agentStatus: AGENT_STATES.IDLE
@@ -848,6 +1094,8 @@ export default class AIChatDrawer extends Drawer {
                   'sabaki-ai-human-collaboration',
                   newValue.toString()
                 )
+                // 同步更新agentOrchestrator中的人机协作设置
+                this.agentOrchestrator.setHumanCollaborationEnabled(newValue)
               },
               class: `drawer-action ${
                 this.state.humanCollaborationEnabled ? 'active' : ''
