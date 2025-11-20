@@ -104,7 +104,7 @@
     "execa": "^9.6.0",
     "figures": "^6.1.0",
     "fix-path": "^5.0.0",
-    "iconv-lite": "^0.5.1",
+    "iconv-lite": "^0.7.0",
     "is-plain-obj": "^4.1.0",
     "is-unicode-supported": "^2.1.0",
     "jschardet": "^3.0.0",
