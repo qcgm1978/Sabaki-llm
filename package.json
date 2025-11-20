@@ -123,7 +123,7 @@
     "yoctocolors": "^2.1.2"
   },
   "devDependencies": {
-    "concurrently": "^7.3.0",
+    "concurrently": "^9.2.1",
     "copy-webpack-plugin": "^13.0.1",
     "crypto-browserify": "^3.12.1",
     "css-loader": "^7.1.2",
