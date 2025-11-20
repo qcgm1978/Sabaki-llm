@@ -149,7 +149,6 @@
     "build": "npm run bundle && electron-builder --dir",
     "create-release": "VERSION=$(node -p \"require('./package.json').version\") && ./scripts/create-release-custom.sh $VERSION auto-commit",
     "create-release:custom": "./scripts/create-release-custom.sh $@",
-    "trigger-workflow": "echo \"创建并推送标签以触发GitHub Actions工作流：\nnpm run create-release - 自动从package.json获取版本号并创建commit和标签\nnpm run create-release:custom -- <版本号> [auto-commit] - 使用自定义版本号，可选添加auto-commit参数自动提交更改\"",
     "format-base": "prettier \"**/*.{js,html,md}\" \"!{{dist,i18n}/**,bundle.js*}\"",
     "format-check": "npm run format-base -- --check",
     "format": "npm run format-base -- --write",
