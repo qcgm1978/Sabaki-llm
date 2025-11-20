@@ -311,8 +311,10 @@ export class AgentOrchestrator {
       this.fiveStepProcess.processContext.stepPlan = processPlan.steps || []
 
       // 返回五步流程计划，等待用户确认
+      const formattedPlan = this._formatProcessPlan(processPlan.steps)
       return {
-        content: this._formatProcessPlan(processPlan.steps),
+        content: formattedPlan.text || formattedPlan,
+        button: formattedPlan.button,
         processPlan: processPlan.steps,
         requiresHumanConfirmation: true
       }
@@ -431,7 +433,7 @@ export class AgentOrchestrator {
    */
   _formatProcessPlan(steps) {
     if (!steps || !Array.isArray(steps)) {
-      return '无法生成五步流程计划'
+      return {text: '无法生成五步流程计划'}
     }
 
     let formatted = '我将按以下五步来解决您的问题：\n\n'
@@ -445,8 +447,15 @@ export class AgentOrchestrator {
       formatted += `   预期输出：${step.expectedOutput}\n\n`
     })
 
-    formatted += '请确认是否按照这个计划开始执行（输入"继续"开始第一步）'
-    return formatted
+    formatted += '请确认是否按照这个计划开始执行'
+    return {
+      text: formatted,
+      button: {
+        text: '开始执行',
+        action: 'continueFiveStepProcess',
+        nextStepIndex: 0
+      }
+    }
   }
 
   /**

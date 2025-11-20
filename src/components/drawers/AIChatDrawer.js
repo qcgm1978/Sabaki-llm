@@ -283,6 +283,7 @@ export default class AIChatDrawer extends Drawer {
             {
               role: 'ai',
               content: response.content,
+              button: response.button,
               processPlan: response.processPlan
             }
           ],
@@ -352,69 +353,24 @@ export default class AIChatDrawer extends Drawer {
     })
 
     try {
-      // 如果正在等待确认
-      if (fiveStepProcessState.waitingForConfirmation) {
-        // 检查用户是否确认执行
-        if (
-          message.toLowerCase().includes('继续') ||
-          message.toLowerCase() === 'y' ||
-          message.toLowerCase() === 'yes'
-        ) {
-          // 开始执行第一步
-          await this.executeProcessStep(0)
-        } else {
-          // 取消流程
-          const updatedMessages = newMessages.filter(
-            msg => msg.role !== 'waiting'
-          )
-          this.setState({
-            fiveStepProcessState: {
-              isActive: false,
-              currentStepIndex: -1,
-              processPlan: null,
-              processContext: null,
-              waitingForConfirmation: false
-            },
-            messages: [
-              ...updatedMessages,
-              {role: 'ai', content: '流程已取消。'}
-            ],
-            sending: false,
-            agentStatus: AGENT_STATES.IDLE
-          })
-        }
-      } else {
-        // 检查用户是否确认执行下一步
-        if (
-          message.toLowerCase().includes('继续') ||
-          message.toLowerCase() === 'y' ||
-          message.toLowerCase() === 'yes'
-        ) {
-          // 执行下一步
-          const nextStepIndex = fiveStepProcessState.currentStepIndex + 1
-          await this.executeProcessStep(nextStepIndex)
-        } else {
-          // 取消流程
-          const updatedMessages = newMessages.filter(
-            msg => msg.role !== 'waiting'
-          )
-          this.setState({
-            fiveStepProcessState: {
-              isActive: false,
-              currentStepIndex: -1,
-              processPlan: null,
-              processContext: null,
-              waitingForConfirmation: false
-            },
-            messages: [
-              ...updatedMessages,
-              {role: 'ai', content: '流程已取消。'}
-            ],
-            sending: false,
-            agentStatus: AGENT_STATES.IDLE
-          })
-        }
-      }
+      // 移除文本命令处理，保留取消流程的逻辑
+      // 当用户在五步流程中输入任何文本时，默认取消流程
+      const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
+      this.setState({
+        fiveStepProcessState: {
+          isActive: false,
+          currentStepIndex: -1,
+          processPlan: null,
+          processContext: null,
+          waitingForConfirmation: false
+        },
+        messages: [
+          ...updatedMessages,
+          {role: 'ai', content: '流程已取消。请使用消息中的按钮来控制流程。'}
+        ],
+        sending: false,
+        agentStatus: AGENT_STATES.IDLE
+      })
     } catch (error) {
       const updatedMessages = newMessages.filter(msg => msg.role !== 'waiting')
       this.setState({
@@ -425,6 +381,17 @@ export default class AIChatDrawer extends Drawer {
         sending: false,
         agentStatus: AGENT_STATES.IDLE
       })
+    }
+  }
+
+  /**
+   * 处理按钮点击事件
+   */
+  handleButtonClick = async message => {
+    if (message.button && message.button.action === 'continueFiveStepProcess') {
+      // 执行下一步
+      const nextStepIndex = message.button.nextStepIndex
+      await this.executeProcessStep(nextStepIndex)
     }
   }
 
@@ -477,12 +444,52 @@ export default class AIChatDrawer extends Drawer {
       let resultContent = `### ${fiveStepProcessState.processPlan[stepIndex].name}\n\n`
       resultContent += stepResult.content + '\n\n'
 
+      // 添加详细信息显示
+      if (stepResult.details) {
+        resultContent += '**详细信息:**\n\n'
+        // 避免直接使用JSON.stringify，使用更友好的格式化方式
+        if (
+          stepResult.details.summary &&
+          stepResult.details.summary !== stepResult.content
+        ) {
+          resultContent += `- 摘要: ${stepResult.details.summary}\n`
+        }
+        if (stepResult.details.analysis) {
+          resultContent += `\n**分析:**\n${stepResult.details.analysis}\n`
+        }
+        if (stepResult.details.plan) {
+          resultContent += `\n**计划:**\n${stepResult.details.plan}\n`
+        }
+        if (stepResult.details.actions) {
+          resultContent += `\n**执行操作:**\n${stepResult.details.actions}\n`
+        }
+        if (stepResult.details.observation) {
+          resultContent += `\n**观察结果:**\n${stepResult.details.observation}\n`
+        }
+        // 对于其他可能的字段，以键值对形式展示
+        const otherFields = Object.keys(stepResult.details).filter(
+          key =>
+            !['summary', 'analysis', 'plan', 'actions', 'observation'].includes(
+              key
+            )
+        )
+        if (otherFields.length > 0) {
+          resultContent += '\n**其他信息:**\n'
+          otherFields.forEach(key => {
+            if (stepResult.details[key]) {
+              const value =
+                typeof stepResult.details[key] === 'object'
+                  ? JSON.stringify(stepResult.details[key])
+                  : stepResult.details[key]
+              resultContent += `- ${key}: ${value}\n`
+            }
+          })
+        }
+      }
+
       // 如果不是最后一步，提示用户继续
       if (!stepResult.isLastStep) {
-        resultContent += `\n步骤 ${stepIndex +
-          1} 已完成。输入"继续"执行下一步：${
-          fiveStepProcessState.processPlan[stepIndex + 1].name
-        }`
+        // 移除文本提示，改为按钮交互
       } else {
         resultContent += `\n✅ 所有步骤已完成！五步问题解决流程已成功结束。`
       }
@@ -495,7 +502,17 @@ export default class AIChatDrawer extends Drawer {
             role: 'ai',
             content: resultContent,
             stepIndex: stepIndex,
-            stepDetails: stepResult.details
+            stepDetails: stepResult.details,
+            // 添加按钮配置
+            button: !stepResult.isLastStep
+              ? {
+                  text: `继续：${
+                    fiveStepProcessState.processPlan[stepIndex + 1].name
+                  }`,
+                  action: 'continueFiveStepProcess',
+                  nextStepIndex: stepIndex + 1
+                }
+              : null
           }
         ],
         fiveStepProcessState: {
@@ -845,20 +862,49 @@ export default class AIChatDrawer extends Drawer {
       roleLabel = '!>'
     }
 
-    // 对于AI消息，允许HTML内容
+    // 对于AI消息，允许HTML内容并添加按钮
     if (message.role === 'ai') {
+      const elements = [
+        h('span', {class: roleClass}, roleLabel + '  '),
+        h('span', {
+          dangerouslySetInnerHTML: {
+            __html: message.content.replace(/\n/g, '<br>  ')
+          }
+        })
+      ]
+
+      // 如果有按钮配置，添加按钮
+      if (message.button) {
+        elements.push(
+          h(
+            'div',
+            {style: {marginTop: '10px'}},
+            h(
+              'button',
+              {
+                style: {
+                  padding: '8px 16px',
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                },
+                onClick: () => this.handleButtonClick(message)
+              },
+              message.button.text
+            )
+          )
+        )
+      }
+
       return h(
         'li',
         {class: 'command'},
         h(
           'div',
           {style: {whiteSpace: 'pre-wrap', wordBreak: 'break-word'}},
-          h('span', {class: roleClass}, roleLabel + '  '),
-          h('span', {
-            dangerouslySetInnerHTML: {
-              __html: message.content.replace(/\n/g, '<br>  ')
-            }
-          })
+          ...elements
         )
       )
     }
