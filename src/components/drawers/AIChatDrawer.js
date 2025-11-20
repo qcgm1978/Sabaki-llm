@@ -466,12 +466,54 @@ export default class AIChatDrawer extends Drawer {
         if (stepResult.details.observation) {
           resultContent += `\n**观察结果:**\n${stepResult.details.observation}\n`
         }
+        // 特别处理工具调用结果，确保工具结果正确显示
+        if (
+          stepResult.details.toolResults &&
+          stepResult.details.toolResults.length > 0
+        ) {
+          resultContent += '\n**工具调用结果:**\n'
+          stepResult.details.toolResults.forEach((toolResult, index) => {
+            resultContent += `\n*工具 ${index + 1}: ${toolResult.toolName}*\n`
+            if (toolResult.error) {
+              resultContent += `  - 错误: ${toolResult.error}\n`
+            } else if (toolResult.result) {
+              // 格式化显示工具结果，避免过于冗长
+              if (typeof toolResult.result === 'object') {
+                // 尝试提取主要内容
+                if (toolResult.result.data) {
+                  const dataStr =
+                    typeof toolResult.result.data === 'object'
+                      ? JSON.stringify(toolResult.result.data, null, 2)
+                      : toolResult.result.data.toString()
+                  resultContent += `  - 数据: ${dataStr}\n`
+                } else if (toolResult.result.content) {
+                  resultContent += `  - 内容: ${toolResult.result.content}\n`
+                } else {
+                  // 如果无法提取，使用简化的JSON
+                  resultContent += `  - 结果: ${JSON.stringify(
+                    toolResult.result
+                  ).substring(0, 200)}${
+                    JSON.stringify(toolResult.result).length > 200 ? '...' : ''
+                  }\n`
+                }
+              } else {
+                resultContent += `  - 结果: ${toolResult.result}\n`
+              }
+            }
+          })
+        }
         // 对于其他可能的字段，以键值对形式展示
         const otherFields = Object.keys(stepResult.details).filter(
           key =>
-            !['summary', 'analysis', 'plan', 'actions', 'observation'].includes(
-              key
-            )
+            ![
+              'summary',
+              'analysis',
+              'plan',
+              'actions',
+              'observation',
+              'toolResults',
+              'allToolResults'
+            ].includes(key)
         )
         if (otherFields.length > 0) {
           resultContent += '\n**其他信息:**\n'

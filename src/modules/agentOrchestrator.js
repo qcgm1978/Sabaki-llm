@@ -564,13 +564,76 @@ export class AgentOrchestrator {
       return {error: '缺少执行步骤计划'}
     }
 
-    // 这里可以根据执行步骤调用相应的工具
-    // 暂时返回模拟的执行结果
+    // 执行步骤中可能涉及的工具调用
+    const executedActions = []
+    const toolResults = []
+    let allResults = ''
+
+    // 遍历执行步骤，检查是否需要调用工具
+    for (const actionStep of planningResult.executionSteps) {
+      executedActions.push(actionStep)
+
+      // 检查步骤是否包含工具调用信息
+      if (actionStep.toolCall) {
+        try {
+          // 执行工具调用
+          const toolResult = await this._executeTool(actionStep.toolCall)
+
+          // 保存工具调用结果
+          toolResults.push({
+            toolName: actionStep.toolCall.name,
+            parameters: actionStep.toolCall.parameters,
+            result: toolResult
+          })
+
+          // 添加到结果汇总
+          if (toolResult.data || toolResult.content) {
+            const resultContent = JSON.stringify(
+              toolResult.data || toolResult.content,
+              null,
+              2
+            )
+            allResults += `工具 ${actionStep.toolCall.name} 的结果:\n${resultContent}\n\n`
+          }
+        } catch (error) {
+          // 记录错误但继续执行其他步骤
+          toolResults.push({
+            toolName: actionStep.toolCall.name,
+            parameters: actionStep.toolCall.parameters,
+            error: error.message
+          })
+          allResults += `工具 ${actionStep.toolCall.name} 执行失败: ${error.message}\n\n`
+        }
+      } else if (actionStep.description) {
+        // 对于没有工具调用的步骤，直接使用描述
+        allResults += `${actionStep.description}\n\n`
+      }
+    }
+
+    // 也检查是否有其他步骤中产生的工具结果
+    const previousSteps = ['task_clarification', 'environment_perception']
+    const allToolResultsFromHistory = []
+
+    previousSteps.forEach(stepId => {
+      if (
+        processContext.stepResults[stepId] &&
+        processContext.stepResults[stepId].toolResults
+      ) {
+        allToolResultsFromHistory.push(
+          ...processContext.stepResults[stepId].toolResults
+        )
+      }
+    })
+
+    // 构建最终返回结果，确保包含所有工具调用结果
     return {
-      summary: '已按照计划执行关键操作',
-      details: '执行了计划中的主要步骤',
-      executedActions: planningResult.executionSteps,
-      results: '操作执行成功，获得了预期结果'
+      summary: '已按照计划执行操作并获得结果',
+      details: '执行了计划中的步骤并获取了工具调用结果',
+      executedActions: executedActions,
+      toolResults: [...toolResults, ...allToolResultsFromHistory],
+      results: allResults || '操作执行成功，获得了预期结果',
+      // 添加所有可能的工具调用结果，确保前端能够显示
+      allToolResults: [...toolResults, ...allToolResultsFromHistory]
     }
   }
 
