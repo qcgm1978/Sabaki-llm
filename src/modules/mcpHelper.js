@@ -1142,21 +1142,50 @@ class MCPHelper {
   }
 
   async handleMCPRequest(mcpRequest, gameContext) {
+    // 检查MCP请求格式
     if (!mcpRequest.mcp || !mcpRequest.mcp.tool) {
-      return {error: '无效的MCP请求格式'}
+      return {
+        jsonrpc: '2.0',
+        error: {
+          code: -32600,
+          message: 'Invalid Request',
+          data: '无效的MCP请求格式'
+        }
+      }
     }
 
     let toolName = mcpRequest.mcp.tool.name
     let endpoint = this.mcpEndpoints.find(e => e.name === toolName)
 
+    // 检查工具是否存在
     if (!endpoint) {
-      return {error: `未找到工具: ${toolName}`}
+      return {
+        jsonrpc: '2.0',
+        error: {
+          code: -32601,
+          message: 'Method not found',
+          data: `未找到工具: ${toolName}`
+        }
+      }
     }
 
-    return await endpoint.handler(
-      mcpRequest.mcp.tool.parameters || {},
-      gameContext
-    )
+    try {
+      return await endpoint.handler(
+        mcpRequest.mcp.tool.parameters || {},
+        gameContext
+      )
+    } catch (error) {
+      // 处理服务器错误
+      console.error(`MCP处理错误 - 工具: ${toolName}`, error)
+      return {
+        jsonrpc: '2.0',
+        error: {
+          code: -32603,
+          message: 'Internal error',
+          data: `服务器内部错误: ${error.message}`
+        }
+      }
+    }
   }
 
   /**

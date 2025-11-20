@@ -447,45 +447,55 @@ export class AgentOrchestrator {
     // 根据工具类型执行不同的逻辑
     let toolResult
 
-    switch (validatedToolInfo.type) {
-      case TOOL_TYPES.INFO_RETRIEVAL:
-      case TOOL_TYPES.EXECUTION:
-        // 信息检索和执行工具的特殊处理逻辑
-        console.log(`执行信息检索/执行工具: ${validatedToolInfo.name}`)
-        toolResult = await this._executeBuiltinTool(validatedToolInfo)
-        break
+    try {
+      switch (validatedToolInfo.type) {
+        case TOOL_TYPES.INFO_RETRIEVAL:
+        case TOOL_TYPES.EXECUTION:
+          // 信息检索和执行工具的特殊处理逻辑
+          console.log(`执行信息检索/执行工具: ${validatedToolInfo.name}`)
+          toolResult = await this._executeBuiltinTool(validatedToolInfo)
+          break
 
-      case TOOL_TYPES.SYSTEM_INTEGRATION:
-        // 系统/API集成工具的特殊处理逻辑
-        console.log(`执行系统/API集成工具: ${validatedToolInfo.name}`)
-        toolResult = await mcpHelper.handleMCPRequest(
-          {
-            mcp: {
-              tool: validatedToolInfo
-            }
-          },
-          gameContext
-        )
-        break
+        case TOOL_TYPES.SYSTEM_INTEGRATION:
+          // 系统/API集成工具的特殊处理逻辑
+          console.log(`执行系统/API集成工具: ${validatedToolInfo.name}`)
+          toolResult = await mcpHelper.handleMCPRequest(
+            {
+              mcp: {
+                tool: validatedToolInfo
+              }
+            },
+            gameContext
+          )
+          break
 
-      case TOOL_TYPES.HUMAN_COLLABORATION:
-        // 人机协作工具的特殊处理逻辑
-        console.log(`执行人机协作工具: ${validatedToolInfo.name}`)
-        toolResult = await this._executeAgentTool(validatedToolInfo)
-        break
+        case TOOL_TYPES.HUMAN_COLLABORATION:
+          // 人机协作工具的特殊处理逻辑
+          console.log(`执行人机协作工具: ${validatedToolInfo.name}`)
+          toolResult = await this._executeAgentTool(validatedToolInfo)
+          break
 
-      default:
-        // 未指定类型的工具默认使用系统/API集成工具处理流程
-        console.log(`执行默认工具: ${validatedToolInfo.name}`)
-        toolResult = await mcpHelper.handleMCPRequest(
-          {
-            mcp: {
-              tool: validatedToolInfo
-            }
-          },
-          gameContext
-        )
-        break
+        default:
+          // 未指定类型的工具默认使用系统/API集成工具处理流程
+          console.log(`执行默认工具: ${validatedToolInfo.name}`)
+          toolResult = await mcpHelper.handleMCPRequest(
+            {
+              mcp: {
+                tool: validatedToolInfo
+              }
+            },
+            gameContext
+          )
+          break
+      }
+    } catch (error) {
+      // 捕获所有未处理的异常，转换为工具操作错误格式
+      console.error(`工具执行异常 - ${validatedToolInfo.name}:`, error)
+      toolResult = {
+        isError: true,
+        error: `工具执行失败: ${error.message}`,
+        message: `执行工具"${validatedToolInfo.name}"时发生内部错误`
+      }
     }
 
     return this._processToolResult(toolResult, validatedToolInfo.name)
@@ -571,10 +581,27 @@ export class AgentOrchestrator {
   }
 
   _processToolResult(toolResult, toolName) {
+    // 处理JSON-RPC格式的错误
+    if (toolResult.jsonrpc === '2.0' && toolResult.error) {
+      return {
+        shouldContinue: false,
+        error: toolResult.error.data || toolResult.error.message
+      }
+    }
+
+    // 处理传统的error字段
     if (toolResult.error) {
       return {
         shouldContinue: false,
         error: toolResult.error
+      }
+    }
+
+    // 处理工具操作中产生的错误（isError字段）
+    if (toolResult.isError === true) {
+      return {
+        shouldContinue: false,
+        error: toolResult.error || toolResult.message || '工具操作失败'
       }
     }
 
@@ -846,6 +873,10 @@ export class AgentOrchestrator {
     prompt += `1. 如果决定调用工具，包含以下字段:\n`
     prompt += `   {"action":"tool_call","tool":{"name":"工具名称","parameters":{参数对象}}}\n`
     prompt += `   请注意: 每个工具都提供了outputSchema，描述了工具返回结果的预期结构。请根据outputSchema解释工具结果。\n`
+    prompt += `   此外，请注意工具可能返回两种类型的错误:\n`
+    prompt += `   1. 标准JSON-RPC错误: 包含jsonrpc、error.code、error.message和error.data字段，用于协议层面的错误\n`
+    prompt += `   2. 工具操作错误: 包含isError:true字段，以及error或message字段，用于工具执行过程中的错误\n`
+    prompt += `   请识别并准确解释这些错误信息，帮助用户理解失败原因。\n`
     prompt += `2. 如果决定直接回答用户，\n`
     prompt += `   {"action":"respond","content":"回答内容"}\n`
     prompt += `3. 如果需要追问用户，\n`
