@@ -191,6 +191,8 @@ export class AgentOrchestrator {
 
     console.error('Agent error:', errorObj)
     this.agentState.error = errorObj
+    // 设置isRunning为false，确保状态完全重置
+    this.agentState.isRunning = false
 
     this._emitStateChange(AGENT_STATES.ERROR)
 
@@ -775,14 +777,24 @@ export class AgentOrchestrator {
     this._emitStateChange(AGENT_STATES.THINKING)
 
     const thoughtPrompt = this._buildThoughtPrompt()
-
-    const thoughtResponse = await ai.sendLLMMessage(
-      thoughtPrompt,
-      this.agentState.conversationContext.gameContext
-    )
-
+    let thoughtResponse
+    try {
+      thoughtResponse = await ai.sendLLMMessage(
+        thoughtPrompt,
+        this.agentState.conversationContext.gameContext
+      )
+    } catch (error) {
+      sabaki.aiManager.openApiKeyManager()
+      this.agentState.isRunning = false
+      this._emitStateChange(AGENT_STATES.IDLE)
+      // 不再抛出错误，而是返回错误信息对象
+      return {error: error.message || String(error)}
+    }
     if (!thoughtResponse || thoughtResponse.error) {
-      throw new Error(thoughtResponse?.error || 'Failed to get LLM response')
+      this.agentState.isRunning = false
+      this._emitStateChange(AGENT_STATES.IDLE)
+      // 不再抛出错误，而是返回错误信息对象
+      return {error: thoughtResponse?.error || 'Failed to get LLM response'}
     }
 
     const thoughtResult = this._parseThoughtResponse(thoughtResponse)

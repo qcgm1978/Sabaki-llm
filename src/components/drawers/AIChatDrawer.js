@@ -92,7 +92,12 @@ export default class AIChatDrawer extends Drawer {
   }
 
   handleAgentStateChange(newState, oldState) {
-    this.setState({agentStatus: newState})
+    // 当接收到IDLE或ERROR状态时，同时重置sending状态
+    if (newState === AGENT_STATES.IDLE || newState === AGENT_STATES.ERROR) {
+      this.setState({agentStatus: newState, sending: false})
+    } else {
+      this.setState({agentStatus: newState})
+    }
 
     // 更新执行统计信息
     if (newState !== AGENT_STATES.IDLE) {
@@ -112,6 +117,11 @@ export default class AIChatDrawer extends Drawer {
         break
       case AGENT_STATES.ERROR:
         console.log('Agent encountered an error')
+        break
+      case AGENT_STATES.PAUSED:
+        console.log('Agent execution paused')
+        // 暂停时也需要重置sending状态
+        this.setState({sending: false})
         break
     }
   }
