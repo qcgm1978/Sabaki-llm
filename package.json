@@ -127,7 +127,7 @@
     "copy-webpack-plugin": "^13.0.1",
     "crypto-browserify": "^3.12.1",
     "css-loader": "^7.1.2",
-    "electron": "^31.0.2",
+    "electron": "^39.2.3",
     "electron-builder": "^23.3.3",
     "esm": "^3.2.25",
     "mocha": "<9.0",
