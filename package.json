@@ -140,7 +140,7 @@
     "electron": "^31.0.2",
     "electron-builder": "^23.3.3",
     "esm": "^3.2.25",
-    "mocha": "<9.0",
+    "mocha": "<12.0",
     "onchange": "^6.1.0",
     "preact": "^10.27.2",
     "prettier": "1.19.1",
