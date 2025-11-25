@@ -99,7 +99,7 @@
     "@sabaki/sgf": "^3.4.7",
     "@sabaki/shudan": "^1.7.1",
     "@xenova/transformers": "^2.17.2",
-    "argv-split": "^2.0.1",
+    "argv-split": "^3.2.1",
     "chromadb": "^3.1.6",
     "classnames": "^2.2.6",
     "cross-spawn": "^7.0.6",
