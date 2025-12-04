@@ -44,6 +44,8 @@ function newWindow(path) {
     }
   })
 
+  const remoteMain = require('@electron/remote/main')
+  remoteMain.enable(window.webContents)
   windows.push(window)
   buildMenu()
 
