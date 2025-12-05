@@ -10,3 +10,4 @@ bundle.js.map
 *.pdn
 *.vbs
 sabaki-golaxy-live/
+node_modules*

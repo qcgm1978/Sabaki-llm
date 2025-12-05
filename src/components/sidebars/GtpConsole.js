@@ -109,9 +109,8 @@ class ConsoleInput extends Component {
 
         if (commandInputText.trim() === '') return
 
-        onSubmit({
-          command: Command.fromString(commandInputText)
-        })
+        // 处理用户输入
+        this.processInput(commandInputText.trim(), onSubmit)
 
         this.inputPointer = null
         this.setState({commandInputText: ''})
@@ -174,6 +173,63 @@ class ConsoleInput extends Component {
           }
         }, 0)
       })
+    }
+
+    // 处理用户输入的函数
+    this.processInput = async (input, onSubmit) => {
+      const {attachedEngine} = this.props
+
+      // 检查是否是katago支持的命令
+      if (
+        attachedEngine &&
+        attachedEngine.commands.includes(input.split(' ')[0])
+      ) {
+        // 是katago支持的命令，按照原来的逻辑处理
+        onSubmit({
+          command: Command.fromString(input)
+        })
+      } else {
+        // 不是katago支持的命令，使用LLM处理
+        const command = {
+          name: input,
+          args: []
+        }
+
+        // 添加用户输入到控制台
+        onSubmit({
+          command
+        })
+
+        try {
+          // 使用LLM处理用户输入
+          let response = await sabaki.processUserQuery(input)
+
+          // 将LLM的响应添加到控制台
+          sabaki.addConsoleResponse('LLM', response, true)
+
+          // 检查LLM响应中是否包含katago命令
+          const katagoCommands = attachedEngine ? attachedEngine.commands : []
+          const responseLines = response.split('\n')
+
+          for (const line of responseLines) {
+            const trimmedLine = line.trim()
+            if (trimmedLine.startsWith('!')) {
+              // 提取katago命令并执行
+              const katagoCommand = trimmedLine.substring(1).trim()
+              const commandName = katagoCommand.split(' ')[0]
+
+              if (katagoCommands.includes(commandName)) {
+                onSubmit({
+                  command: Command.fromString(katagoCommand)
+                })
+              }
+            }
+          }
+        } catch (error) {
+          // 添加错误信息到控制台
+          sabaki.addConsoleResponse('LLM', `Error: ${error.message}`, true)
+        }
+      }
     }
   }
 
@@ -273,6 +329,8 @@ export default class GtpConsole extends Component {
   }
 
   render({consoleLog, attachedEngine}) {
+    let disabled = attachedEngine == null
+
     return h(
       'section',
       {class: 'gtp-console'},

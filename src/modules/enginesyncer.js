@@ -12,6 +12,7 @@ import {parseCompressedVertices} from '@sabaki/sgf'
 import i18n from '../i18n.js'
 import {getBoard, getRootProperty} from './gametree.js'
 import {noop, equals} from './helper.js'
+import OllamaClient from './ollama.js'
 
 const t = i18n.context('EngineSyncer')
 const setting = remote.require('./setting')
@@ -87,6 +88,8 @@ export default class EngineSyncer extends EventEmitter {
     this.engine = engine
     this.commands = []
     this.treePosition = null
+    this.ollamaClient = new OllamaClient()
+    this.promptHistory = []
 
     let absolutePath = resolve(path)
     let executePath = existsSync(absolutePath) ? absolutePath : path
@@ -408,5 +411,44 @@ export default class EngineSyncer extends EventEmitter {
 
     this.treePosition = id
     this.analysis = null
+  }
+
+  async generateResponseWithPromptChain(userInput, context = []) {
+    let promptChain = [
+      `当前棋局分析：${JSON.stringify(this.analysis)}`,
+      `用户问题：${userInput}`,
+      `请基于棋局分析回答用户问题，保持回答简洁明了。`
+    ]
+
+    if (context.length > 0) {
+      promptChain = [...context, ...promptChain]
+    }
+
+    return this.ollamaClient.generateWithContext(
+      promptChain.join('\n'),
+      context,
+      {temperature: 0.7}
+    )
+  }
+
+  async processUserQuery(query, options = {}) {
+    this.promptHistory.push(`用户：${query}`)
+
+    let response
+    if (this.analysis) {
+      response = await this.generateResponseWithPromptChain(
+        query,
+        this.promptHistory.slice(-10)
+      )
+    } else {
+      response = await this.ollamaClient.generate(query, {temperature: 0.7})
+    }
+
+    this.promptHistory.push(`AI：${response}`)
+    return response
+  }
+
+  clearPromptHistory() {
+    this.promptHistory = []
   }
 }

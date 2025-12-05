@@ -527,6 +527,13 @@ exports.get = function(props = {}) {
 
             sabaki.generateMove(syncerId, sabaki.state.treePosition)
           }
+        },
+        {
+          label: i18n.t('menu.engines', 'Open &Chat Interface'),
+          accelerator: 'F11',
+          click: () => {
+            sabaki.setState({showChatInterface: true})
+          }
         }
       ]
     },

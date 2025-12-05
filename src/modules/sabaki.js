@@ -104,6 +104,10 @@ class Sabaki extends EventEmitter {
       onInputBoxSubmit: helper.noop,
       onInputBoxCancel: helper.noop,
 
+      // Chat Interface
+
+      showChatInterface: false,
+
       // Info Overlay
 
       infoOverlayText: '',
@@ -192,6 +196,20 @@ class Sabaki extends EventEmitter {
         return state.attachedEngineSyncers.find(
           syncer => syncer.id === state.analyzingEngineSyncerId
         )
+      },
+      get activeEngineSyncer() {
+        // 先查找有明确角色的引擎
+        let activeSyncer = state.attachedEngineSyncers.find(
+          syncer =>
+            syncer.id === state.analyzingEngineSyncerId ||
+            syncer.id === state.blackEngineSyncerId ||
+            syncer.id === state.whiteEngineSyncerId
+        )
+        // 如果没有，返回第一个可用的引擎
+        if (!activeSyncer && state.attachedEngineSyncers.length > 0) {
+          activeSyncer = state.attachedEngineSyncers[0]
+        }
+        return activeSyncer
       },
       get winrateData() {
         return [
@@ -1652,6 +1670,25 @@ class Sabaki extends EventEmitter {
 
   // Engine Management
 
+  addConsoleResponse(engineName, content, isError = false) {
+    let entry = {
+      name: engineName,
+      command: null,
+      response: {content, internal: isError},
+      waiting: false
+    }
+    let maxLength = setting.get('console.max_history_count')
+
+    this.setState(({consoleLog}) => {
+      let newLog = consoleLog.slice(
+        Math.max(consoleLog.length - maxLength + 1, 0)
+      )
+      newLog.push(entry)
+
+      return {consoleLog: newLog}
+    })
+  }
+
   handleCommandSent({syncer, command, subscribe, getResponse}) {
     let t = i18n.context('sabaki.engine')
     let entry = {name: syncer.engine.name, command, waiting: true}
@@ -2061,6 +2098,21 @@ class Sabaki extends EventEmitter {
     }
 
     this.stopEngineGame(gameId)
+  }
+
+  async processUserQuery(query, options = {}) {
+    let activeSyncer = this.inferredState.activeEngineSyncer
+    if (!activeSyncer) {
+      throw new Error('没有可用的引擎')
+    }
+    return activeSyncer.processUserQuery(query, options)
+  }
+
+  clearPromptHistory() {
+    let activeSyncer = this.inferredState.activeEngineSyncer
+    if (activeSyncer) {
+      activeSyncer.clearPromptHistory()
+    }
   }
 
   async stopEngineGame(gameId = null) {

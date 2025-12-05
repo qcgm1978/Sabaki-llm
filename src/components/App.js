@@ -14,6 +14,7 @@ import LeftSidebar from './LeftSidebar.js'
 import Sidebar from './Sidebar.js'
 import DrawerManager from './DrawerManager.js'
 import InputBox from './InputBox.js'
+import ChatInterface from './ChatInterface.js'
 import BusyScreen from './BusyScreen.js'
 import InfoOverlay from './InfoOverlay.js'
 
@@ -389,6 +390,8 @@ class App extends Component {
         onSubmit: state.onInputBoxSubmit,
         onCancel: state.onInputBoxCancel
       }),
+
+      h(ChatInterface, {show: state.showChatInterface}),
 
       h(BusyScreen, {show: state.busy > 0}),
       h(InfoOverlay, {text: state.infoOverlayText, show: state.showInfoOverlay})
