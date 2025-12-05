@@ -11,3 +11,5 @@ bundle.js.map
 *.vbs
 sabaki-golaxy-live/
 node_modules*
+*.bundle.js
+Golaxy*
