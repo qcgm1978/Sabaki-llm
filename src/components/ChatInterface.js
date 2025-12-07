@@ -1,8 +1,10 @@
 import {h, Component} from 'preact'
 import classNames from 'classnames'
 
+import OllamaClient from '../modules/ollama.js'
 import sabaki from '../modules/sabaki.js'
 import {noop} from '../modules/helper.js'
+import TextSpinner from './TextSpinner.js'
 
 export default class ChatInterface extends Component {
   constructor() {
@@ -13,6 +15,9 @@ export default class ChatInterface extends Component {
       messages: [],
       isLoading: false
     }
+
+    this.ollamaClient = new OllamaClient()
+    this.promptHistory = []
 
     this.handleInput = evt => this.setState({input: evt.currentTarget.value})
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -32,16 +37,20 @@ export default class ChatInterface extends Component {
     }))
 
     try {
-      let response = await sabaki.processUserQuery(query)
+      this.promptHistory.push(`用户：${query}`)
+
+      let response = await this.ollamaClient.generate(query, {temperature: 0.7})
+
+      this.promptHistory.push(`AI：${response}`)
       this.setState(prev => ({
-        messages: [...prev.messages, {type: 'ai', content: response}],
-        isLoading: false
+        messages: [...prev.messages, {type: 'ai', content: response}]
       }))
     } catch (error) {
       this.setState(prev => ({
-        messages: [...prev.messages, {type: 'error', content: error.message}],
-        isLoading: false
+        messages: [...prev.messages, {type: 'error', content: error.message}]
       }))
+    } finally {
+      this.setState({isLoading: false})
     }
   }
 
@@ -57,7 +66,7 @@ export default class ChatInterface extends Component {
   }
 
   clearHistory() {
-    sabaki.clearPromptHistory()
+    this.promptHistory = []
     this.setState({messages: []})
   }
 
@@ -113,7 +122,10 @@ export default class ChatInterface extends Component {
             h(
               'div',
               {class: 'message loading'},
-              h('div', {class: 'message-content'}, 'AI 正在思考...')
+              h('div', {class: 'message-content'}, [
+                'AI 正在思考... ',
+                h(TextSpinner)
+              ])
             )
         ),
         h(

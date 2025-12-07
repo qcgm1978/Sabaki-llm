@@ -11,6 +11,20 @@ const {resolve} = require('path')
 const i18n = require('./i18n')
 const setting = require('./setting')
 const updater = require('./updater')
+
+// Polyfill for isDesktopCapturerEnabled method for Electron 33+
+try {
+  const electronBinding = process.electronBinding
+  if (electronBinding && typeof electronBinding === 'function') {
+    const features = electronBinding('features')
+    if (features && !features.isDesktopCapturerEnabled) {
+      features.isDesktopCapturerEnabled = () => true
+    }
+  }
+} catch (e) {
+  console.log('Failed to add isDesktopCapturerEnabled polyfill:', e)
+}
+
 require('@electron/remote/main').initialize()
 
 let windows = []
@@ -44,8 +58,6 @@ function newWindow(path) {
     }
   })
 
-  const remoteMain = require('@electron/remote/main')
-  remoteMain.enable(window.webContents)
   windows.push(window)
   buildMenu()
 
@@ -85,6 +97,8 @@ function newWindow(path) {
   })
 
   window.loadURL(`file://${resolve(__dirname, '../index.html')}`)
+
+  require('@electron/remote/main').enable(window.webContents)
 
   return window
 }

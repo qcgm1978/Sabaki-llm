@@ -84,7 +84,7 @@
     "proseWrap": "always"
   },
   "dependencies": {
-    "@electron/remote": "^1.2.0",
+    "@electron/remote": "latest",
     "@mariotacke/color-thief": "^3.0.1",
     "@primer/octicons": "^9.6.0",
     "@sabaki/boardmatcher": "^1.2.0",
@@ -106,6 +106,7 @@
     "node-fetch": "^3.3.2",
     "pikaday": "^1.8.0",
     "preact": "^10.4.0",
+    "process": "^0.11.10",
     "react-markdown": "^8.0.3",
     "remark-breaks": "^3.0.2",
     "rimraf": "^3.0.2",
@@ -114,7 +115,7 @@
   },
   "devDependencies": {
     "concurrently": "^7.3.0",
-    "electron": "<14.0.0",
+    "electron": "^33.0.0",
     "electron-builder": "^23.3.3",
     "esm": "^3.2.25",
     "mocha": "<9.0",

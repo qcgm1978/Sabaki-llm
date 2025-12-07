@@ -21,6 +21,9 @@ module.exports = (env, argv) => ({
       'react-dom/test-utils': 'preact/test-utils',
       'react-dom': 'preact/compat',
       'react/jsx-runtime': 'preact/jsx-runtime'
+    },
+    fallback: {
+      process: require.resolve('process/browser')
     }
   },
 

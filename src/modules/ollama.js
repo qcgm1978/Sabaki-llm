@@ -1,5 +1,3 @@
-import fetch from 'node-fetch'
-
 const OLLAMA_API_URL = 'http://localhost:11434/api/generate'
 const DEFAULT_OLLAMA_MODEL = 'llama3.2:latest'
 
